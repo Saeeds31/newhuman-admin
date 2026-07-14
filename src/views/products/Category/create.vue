@@ -72,21 +72,7 @@
             <small v-if="errors.meta_description" class="text-danger">{{ errors.meta_description[0] }}</small>
           </b-form-group>
         </b-col>
-        <b-col cols="12" md="6">
-          <b-form-group>
-            <b-form-checkbox id="status" v-model="form.show_in_home" :true-value="1" :false-value="0">
-              نمایش در صفحه اصلی
-            </b-form-checkbox>
-          </b-form-group>
-        </b-col>
-
-        <b-col cols="12" md="6">
-          <b-form-group>
-            <b-form-checkbox id="status" v-model="form.show_products_in_home" :true-value="1" :false-value="0">
-              نمایش محصولات در صفحه اصلی
-            </b-form-checkbox>
-          </b-form-group>
-        </b-col>
+    
       </b-row>
 
       <div class="mt-3">
@@ -125,8 +111,6 @@ const form = reactive({
   meta_description: '',
   description: '',
   parent_id: null,
-  show_in_home: false,
-  show_products_in_home: false,
 })
 
 const errors = reactive({})
@@ -164,11 +148,8 @@ const handleSubmit = async () => {
   try {
     const formData = new FormData()
     for (const key in form) {
-      if (key == 'show_in_home' || key == 'show_products_in_home') {
-        formData.append(key, Number(form[key]))
-      } else {
+    
         formData.append(key, form[key] ?? "")
-      }
     }
     await axios.post('/categories', formData)
     toast.success('دسته‌بندی با موفقیت ایجاد شد ✅')

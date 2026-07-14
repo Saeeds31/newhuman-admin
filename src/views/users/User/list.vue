@@ -48,10 +48,6 @@
                                 <td>{{ user.national_code ?? '-' }}</td>
                                 <td>{{ user.birth_date ?? '-' }}</td>
                                 <td>
-                                    <router-link :to="`/users/${user.id}/addresses`" class="btn btn-sm btn-success">
-                                        <i class="bi bi-house"></i>
-                                        <span>آدرس ها</span>
-                                    </router-link>
                                     <router-link :to="`/users/${user.id}/edit`" class="btn btn-sm btn-info ms-2">
                                         <i class="bi bi-pen"></i>
                                         <span> ویرایش</span>

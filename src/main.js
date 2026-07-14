@@ -19,14 +19,20 @@ import Vue3PersianDatetimePicker from "vue3-persian-datetime-picker";
 import "@boindil/vue-file-agent-next/dist/vue-file-agent-next.css";
 // api.mahseti.shop
 // 127.0.0.1:8000
-axios.defaults.baseURL = "https://api.hadis-scarf.ir/api/v1/admin";
-window.baseImageAddress = "https://api.hadis-scarf.ir/storage_public/";
+axios.defaults.baseURL = "http://127.0.0.1:8000/api/v1/admin";
+window.baseImageAddress = "http://127.0.0.1:8000/storage_public/";
 const app = createApp(App);
 // app.use(CKEditor)
 app.use(Vue3Toastify, {
   autoClose: 3000, // زمان بسته شدن (میلی‌ثانیه)
   position: "top-right", // مکان پیش‌فرض toast
 });
+app.config.globalProperties.$filters = {
+  numberFormat(value) {
+    if (!value && value !== 0) return '۰';
+    return new Intl.NumberFormat('fa-IR').format(value);
+  }
+};
 app.use(BootstrapVue3);
 app.use(VueFileAgent);
 app.use(pinia);

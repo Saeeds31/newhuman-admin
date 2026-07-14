@@ -79,21 +79,8 @@
             <small v-if="errors.meta_description" class="text-danger">{{ errors.meta_description[0] }}</small>
           </b-form-group>
         </b-col>
-        <b-col cols="12" md="6">
-          <b-form-group>
-            <b-form-checkbox id="status" v-model="form.show_in_home" :true-value="1" :false-value="0">
-              نمایش در صفحه اصلی
-            </b-form-checkbox>
-          </b-form-group>
-        </b-col>
-
-        <b-col cols="12" md="6">
-          <b-form-group>
-            <b-form-checkbox id="status" v-model="form.show_products_in_home" :true-value="1" :false-value="0">
-              نمایش محصولات در صفحه اصلی
-            </b-form-checkbox>
-          </b-form-group>
-        </b-col>
+      
+       
       </b-row>
 
       <div class="mt-3">
@@ -137,8 +124,6 @@ const form = reactive({
   meta_title: '',
   meta_description: '',
   description: '',
-  show_in_home: false,
-  show_products_in_home: false,
   parent_id: null,
 })
 
@@ -157,8 +142,6 @@ onMounted(async () => {
   try {
     const res = await axios.get(`/categories/${route.params.id}`)
     Object.assign(form, res.data.data)
-    form.show_in_home = Number(res.data.data.show_in_home)
-    form.show_products_in_home = Number(res.data.data.show_products_in_home)
     if (res.data.data.main_image)
       oldImage.value =
         [{
@@ -214,9 +197,7 @@ const handleSubmit = async () => {
   try {
     const formData = new FormData()
     for (const key in form) {
-      if (key == 'show_in_home' || key == 'show_products_in_home') {
-        formData.append(key, Number(form[key]))
-      } else if (key != 'icon' && key != "main_image") formData.append(key, form[key])
+      if (key != 'icon' && key != "main_image") formData.append(key, form[key])
     }
     if (form.main_image) {
       formData.append("main_image", form.main_image)

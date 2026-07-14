@@ -151,10 +151,17 @@ const menuItems = ref([
     permissions: ['wallet_view', 'attributes_view', 'category_view', 'product_view', 'product_store', 'specifications_view'],
     icon: "bi-box-seam",
     children: [
+
+      {
+        name: "انواع محصول",
+        permissions: ['producttype_view'],
+        link: "/products/product-types",
+        icon: "bi-tags"
+      },
       {
         name: "ویژگی‌ها",
-        permissions: ['attributes_view'],
-        link: "/products/attributes",
+        permissions: ['productattribute_view'],
+        link: "/products/product-attributes",
         icon: "bi-sliders"
       },
       {
@@ -183,6 +190,27 @@ const menuItems = ref([
       },
     ],
   },
+  {
+    name: "فایل ها",
+    permissions: ['file_view', 'filecategory_view',],
+    icon: "bi-files",
+    children: [
+
+      {
+        name: "دسته‌بندی‌ها",
+        permissions: ['filecategory_view'],
+        link: "/files/categories", icon: "bi-tags"
+      },
+      {
+        name: "فایل ها",
+        permissions: ['file_view'],
+        link: "/files", icon: "bi-files"
+      },
+
+
+    ],
+  },
+
   {
     name: "محتوا",
     permissions: ['menu_view', 'slider_view', 'banner_view'],

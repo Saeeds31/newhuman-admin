@@ -1,809 +1,671 @@
 <template>
-  <div class="product-edit container py-4" v-if="checkPermission(['product_update'])">
-    <!-- دکمه‌های مرحله‌ای -->
-    <div class="step-buttons d-flex flex-wrap align-items-center mb-4">
-      <template v-for="(step, index) in steps" :key="index">
-        <button class="btn btn-primary d-flex align-items-end me-2 mb-2 step-btn"
-          :class="{ active: currentStep === index }" :disabled="!step.enabled" @click="currentStep = index">
-          <i :class="step.icon" class="me-1"></i>
-          {{ step.label }}
-          <span v-if="step.completed" class="ms-1 text-success">&#10003;</span>
-        </button>
-        <div v-if="index < steps.length - 1" class="step-divider-wrap">
-          <i class="bi bi-caret-left"></i>
-          <i class="bi bi-caret-left"></i>
-          <i class="bi bi-caret-left"></i>
-        </div>
-      </template>
-    </div>
+  <div class="container py-4" v-if="checkPermission(['product_update'])">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="bi bi-pencil-square"></i> ویرایش محصول</h3>
+      </div>
+      <div class="card-body">
+        <!-- استپ‌های سفارشی -->
+        <div class="steps-wrapper">
+          <div class="steps-header">
+            <div v-for="(step, index) in steps" :key="index" class="step-item" 
+                 :class="{ active: currentStep === index, completed: currentStep > index }">
+              <div class="step-circle" @click="goToStep(index)">
+                <i :class="step.icon"></i>
+                <span class="step-number">{{ index + 1 }}</span>
+              </div>
+              <div class="step-label">{{ step.label }}</div>
+            </div>
+          </div>
 
-    <!-- اسکلتون لودینگ اولیه -->
-    <div v-if="initialLoading" class="text-center py-5">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p class="mt-2 text-muted">در حال بارگذاری اطلاعات محصول...</p>
-    </div>
-
-    <template v-else>
-      <!-- مرحله اول: اطلاعات اصلی محصول -->
-      <div class="bg-gray" v-if="currentStep === 0">
-        <h3>
-          <i class="bi bi-info"></i>
-          <span>مرحله اول: اطلاعات اصلی محصول</span>
-        </h3>
-        <form @submit.prevent="saveStep1">
-          <fieldset :disabled="loading">
-            <div class="formSetp1 g-3">
-              <div class="border-box row">
-                <!-- عنوان و قیمت -->
+          <div class="step-content">
+            <!-- استپ ۱: اطلاعات اصلی -->
+            <div v-if="currentStep === 0" class="step-panel">
+              <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">عنوان محصول</label>
+                  <label class="form-label">نوع محصول <span class="text-danger">*</span></label>
+                  <select v-model="form.product_type_id" @change="loadAttributes" class="form-control" required>
+                    <option value="">انتخاب کنید</option>
+                    <option v-for="type in productTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+                  </select>
+                  <span v-if="errors.product_type_id" class="text-danger">{{ errors.product_type_id[0] }}</span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">عنوان <span class="text-danger">*</span></label>
                   <input v-model="form.title" type="text" class="form-control" />
-                  <span v-if="errors.step1.title" class="text-danger">{{ errors.step1.title[0] }}</span>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">
-                    قیمت
-                    <span v-if="form.price">{{ Number(form.price).toLocaleString('fa-IR') }}</span>
-                    (تومان)
-                  </label>
-                  <input v-model="form.price" type="number" class="form-control" />
-                  <span v-if="errors.step1.price" class="text-danger">{{ errors.step1.price[0] }}</span>
+                  <span v-if="errors.title" class="text-danger">{{ errors.title[0] }}</span>
                 </div>
 
-                <!-- دسته‌بندی‌ها -->
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">دسته‌بندی‌ها</label>
-                  <Treeselect v-model="form.categories" :multiple="true" :options="categoryOptions"
-                    :normalizer="normalizer" />
-                  <span v-if="errors.step1.categories" class="text-danger">{{ errors.step1.categories[0] }}</span>
-                </div>
-
-                <!-- بارکد، SKU، موجودی -->
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">بارکد</label>
-                  <input v-model="form.barcode" type="text" class="form-control" />
-                  <span v-if="errors.step1.barcode" class="text-danger">{{ errors.step1.barcode[0] }}</span>
-                </div>
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">SKU</label>
-                  <input v-model="form.sku" type="text" class="form-control" />
-                  <span v-if="errors.step1.sku" class="text-danger">{{ errors.step1.sku[0] }}</span>
-                </div>
-                <div class="col-md-4 mb-3">
-                  <label class="form-label">
-                    موجودی
-                    <span v-if="form.stock">{{ Number(form.stock).toLocaleString('fa-IR') }}</span>
-                  </label>
-                  <input v-model="form.stock" type="number" class="form-control" />
-                  <span v-if="errors.step1.stock" class="text-danger">{{ errors.step1.stock[0] }}</span>
-                </div>
-
-                <!-- توضیحات -->
                 <div class="col-md-12 mb-3">
                   <label class="form-label">توضیحات</label>
                   <Editor v-model="form.description" />
-                  <span v-if="errors.step1.description" class="text-danger">{{ errors.step1.description[0] }}</span>
+                  <span v-if="errors.description" class="text-danger">{{ errors.description[0] }}</span>
                 </div>
 
-                <!-- تصاویر -->
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">تصاویر</label>
-                  <VueFileAgent v-model:rawModelValue="oldImages" @select="imagesLoaded" @beforedelete="imageDeleted"
-                    :multiple="true" accept=".jpg,.png,.webp" theme="grid" deletable sortable />
-                  <span v-if="errors.step1.images" class="text-danger">{{ errors.step1.images[0] }}</span>
-                </div>
-              </div>
-
-              <div class="border-box">
-                <!-- وضعیت و تخفیف -->
-                <div class="col-md-12 mb-3">
+                <div class="col-md-6 mb-3">
                   <label class="form-label">وضعیت</label>
-                  <select v-model="form.status" class="form-select">
-                    <option value="">انتخاب کنید</option>
-                    <option value="draft">پیشنویس</option>
-                    <option value="published">انتشار</option>
-                    <option value="unavailable">ناموجود</option>
+                  <select v-model="form.status" class="form-control">
+                    <option value="draft">پیش‌نویس</option>
+                    <option value="published">منتشر شده</option>
+                    <option value="unpublished">منتشر نشده</option>
                   </select>
-                  <span v-if="errors.step1.status" class="text-danger">{{ errors.step1.status[0] }}</span>
                 </div>
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">نوع تخفیف</label>
-                  <select v-model="form.discount_type" class="form-select">
-                    <option value="">انتخاب کنید</option>
-                    <option value="fixed">ثابت</option>
-                    <option value="percent">درصدی</option>
-                  </select>
-                  <span v-if="errors.step1.discount_type" class="text-danger">{{ errors.step1.discount_type[0] }}</span>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">عنوان متا</label>
+                  <input v-model="form.meta_title" type="text" class="form-control" />
                 </div>
+
                 <div class="col-md-12 mb-3">
+                  <label class="form-label">توضیحات متا</label>
+                  <textarea v-model="form.meta_description" class="form-control" rows="2"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- استپ ۲: قیمت و تخفیف -->
+            <div v-if="currentStep === 1" class="step-panel">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">قیمت (تومان)</label>
+                  <input v-model.number="form.price" type="number" class="form-control" min="0" />
+                  <span v-if="errors.price" class="text-danger">{{ errors.price[0] }}</span>
+                </div>
+
+                <div class="col-md-3 mb-3">
                   <label class="form-label">مقدار تخفیف</label>
-                  <input v-model="form.discount_value" type="number" class="form-control" />
-                  <span v-if="errors.step1.discount_value" class="text-danger">{{ errors.step1.discount_value[0]
-                  }}</span>
+                  <input v-model.number="form.discount_value" type="number" class="form-control" min="0" />
                 </div>
 
-                <!-- تصویر اصلی و ویدئو -->
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">تصویر اصلی</label>
-                  <VueFileAgent :raw-model-value="oldMainImage" @select="imageLoaded" @beforedelete="mainImageRemoved"
-                    :maxFiles="1" accept=".jpg,.png" theme="grid" deletable sortable />
-                  <span v-if="errors.step1.main_image" class="text-danger">{{ errors.step1.main_image[0] }}</span>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">نوع تخفیف</label>
+                  <select v-model="form.discount_type" class="form-control">
+                    <option value="">بدون تخفیف</option>
+                    <option value="percent">درصدی</option>
+                    <option value="fixed">ثابت</option>
+                  </select>
                 </div>
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">ویدئو</label>
-                  <VueFileAgent :raw-model-value="oldMainVideo" @select="videoLoaded" @beforedelete="mainVideoRemoved"
-                    @update:rawModelValue="onMainVideoChange" :maxFiles="1" accept=".mp4,.mov,.avi" theme="grid"
-                    deletable sortable />
-                  <span v-if="errors.step1.video" class="text-danger">{{ errors.step1.video[0] }}</span>
+
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.is_free" type="checkbox" class="form-check-input" id="is_free" />
+                    <label class="form-check-label" for="is_free">محصول رایگان</label>
+                  </div>
+                </div>
+
+                <div class="col-md-6 mb-3" v-if="!form.is_free && form.price > 0">
+                  <label class="form-label">قیمت نهایی</label>
+                  <input :value="numberFormat(finalPrice)" type="text" class="form-control" disabled />
                 </div>
               </div>
             </div>
 
-            <div class="metaBox row border-box g-3">
-              <!-- متا -->
-              <div class="col-md-12 mb-3">
-                <label class="form-label">عنوان متا</label>
-                <input v-model="form.meta_title" type="text" class="form-control" />
-                <span v-if="errors.step1.meta_title" class="text-danger">{{ errors.step1.meta_title[0] }}</span>
-              </div>
-              <div class="col-md-12 mb-3">
-                <label class="form-label">توضیحات متا</label>
-                <textarea v-model="form.meta_description" class="form-control"></textarea>
-                <span v-if="errors.step1.meta_description" class="text-danger">{{ errors.step1.meta_description[0]
-                }}</span>
+            <!-- استپ ۳: تصاویر -->
+            <div v-if="currentStep === 2" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">افزودن تصاویر جدید</label>
+                  <VueFileAgent
+                    @select="imagesLoaded"
+                    :maxFiles="10"
+                    accept="image/*"
+                    theme="grid"
+                    deletable
+                    sortable
+                  />
+                  <small class="text-muted">حداکثر ۱۰ تصویر - فرمت‌های مجاز: jpg, png, webp</small>
+                  <span v-if="errors.images" class="text-danger d-block">{{ errors.images[0] }}</span>
+                </div>
+
+                <!-- نمایش تصاویر موجود -->
+                <div class="col-12" v-if="existingImages.length > 0">
+                  <label class="form-label">تصاویر موجود (برای حذف روی × کلیک کنید)</label>
+                  <div class="row">
+                    <div class="col-md-3 mb-2" v-for="(img, index) in existingImages" :key="img.id || index">
+                      <div class="position-relative">
+                        <img :src="baseImageAddress + img.path" class="img-fluid rounded" style="height:150px;width:100%;object-fit:cover" />
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" @click="markImageForDeletion(index)">
+                          <i class="bi bi-x"></i>
+                        </button>
+                        <div class="text-center mt-1">
+                          <small>{{ img.is_deleted ? 'در انتظار حذف' : 'ترتیب: ' + (index + 1) }}</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- نمایش تصاویر جدید آپلود شده -->
+                <div class="col-12" v-if="newImages.length > 0">
+                  <label class="form-label">تصاویر جدید</label>
+                  <div class="row">
+                    <div class="col-md-3 mb-2" v-for="(img, index) in newImages" :key="'new-' + index">
+                      <div class="position-relative">
+                        <img :src="img.url" class="img-fluid rounded" style="height:150px;width:100%;object-fit:cover" />
+                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" @click="removeNewImage(index)">
+                          <i class="bi bi-x"></i>
+                        </button>
+                        <div class="text-center mt-1">
+                          <small>جدید</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </fieldset>
 
-          <button type="submit" :disabled="loading" class="btn btn-primary mt-3">
-            <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-            <i v-else class="bi bi-save2"></i>
-            <span class="mx-2">ذخیره مرحله اول</span>
-          </button>
-        </form>
-      </div>
+            <!-- استپ ۴: ویدیو -->
+            <div v-if="currentStep === 3" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">ویدیو</label>
+                  <VueFileAgent
+                    @select="videoLoaded"
+                    :maxFiles="1"
+                    accept="video/*"
+                    theme="grid"
+                    deletable
+                    sortable
+                  />
+                  <small class="text-muted">فرمت‌های مجاز: mp4, avi, mkv</small>
+                  <span v-if="errors.video" class="text-danger d-block">{{ errors.video[0] }}</span>
+                </div>
 
-      <!-- مرحله دوم: واریانت‌ها -->
-      <div class="bg-gray" v-else-if="currentStep === 1">
-        <h3>
-          <i class="bi bi-palette"></i>
-          <span>مرحله دوم: تنوع‌ها</span>
-        </h3>
-        <form>
-          <div class="row formSetp2">
-            <div class="col-md-12 mb-3">
-              <label>ویژگی‌ها:</label>
-              <Treeselect v-model="selectedAttibutes" :multiple="true" :options="attributes"
-                :normalizer="attributeNormalizer" />
-            </div>
-            <template v-for="attributeId in selectedAttibutes" :key="attributeId">
-              <div class="col-md-12 mb-3">
-                <label>انتخاب {{ attrName(attributeId) }}:</label>
-                <Treeselect :valueFormat="'object'" v-model="attributeValue[attributeId]" :multiple="true"
-                  :options="attributeOptionsFor(attributeId)" :normalizer="attributeValuesNormalizer" />
+                <div class="col-12" v-if="form.video && !videoDeleted">
+                  <video :src="baseImageAddress + form.video" controls style="width:100%;max-height:400px"></video>
+                  <button class="btn btn-danger btn-sm mt-2" @click="deleteVideo">
+                    <i class="bi bi-trash3"></i> حذف ویدیو
+                  </button>
+                </div>
+
+                <div class="col-12" v-if="videoDeleted">
+                  <div class="alert alert-warning">ویدیو برای حذف علامت‌گذاری شده است</div>
+                </div>
+
+                <div class="col-12" v-if="newVideo">
+                  <video :src="newVideo" controls style="width:100%;max-height:400px"></video>
+                  <div class="alert alert-success mt-2">ویدیو جدید برای آپلود آماده است</div>
+                </div>
               </div>
-            </template>
+            </div>
+
+            <!-- استپ ۵: دسته‌بندی‌ها -->
+            <div v-if="currentStep === 4" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">دسته‌بندی‌ها</label>
+                  <Treeselect
+                    v-model="form.categories"
+                    :multiple="true"
+                    :options="categoryOptions"
+                    :normalizer="normalizer"
+                    placeholder="دسته‌بندی‌ها را انتخاب کنید"
+                  />
+                  <span v-if="errors.categories" class="text-danger">{{ errors.categories[0] }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- استپ ۶: ویژگی‌ها -->
+            <div v-if="currentStep === 5" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3" v-if="attributes.length === 0">
+                  <div class="alert alert-info">برای این نوع محصول ویژگی‌ای تعریف نشده است.</div>
+                </div>
+                <div class="col-md-6 mb-3" v-for="attr in attributes" :key="attr.id">
+                  <label class="form-label">
+                    {{ attr.name }}
+                    <span class="text-danger" v-if="attr.is_required">*</span>
+                  </label>
+                  <input v-model="form.attributes[attr.id]" type="text" class="form-control" />
+                  <span v-if="errors['attributes.' + attr.id]" class="text-danger">
+                    {{ errors['attributes.' + attr.id][0] }}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <span v-if="errors.step2.variants" class="text-danger d-block mb-2">{{ errors.step2.variants[0] }}</span>
-
-          <div v-if="variantCombinations.length" class="table-responsive mt-3 formSetp2">
-            <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th v-for="attributeId in attributesWithValues" :key="attributeId">
-                    {{ attrName(attributeId) }}
-                  </th>
-                  <th>SKU</th>
-                  <th>قیمت</th>
-                  <th>موجودی</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="variant in variantCombinations" :key="variant.uid">
-                  <td v-for="(AV, idx) in variant.values" :key="idx">
-                    {{ AV ? AV.value : '' }}
-                  </td>
-                  <td><input v-model="variant.sku" class="form-control" /></td>
-                  <td><input v-model="variant.price" type="number" class="form-control" /></td>
-                  <td><input v-model="variant.stock" type="number" class="form-control" /></td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- دکمه‌های ناوبری -->
+        <div class="d-flex justify-content-between mt-4">
+          <button class="btn btn-secondary" @click="prevStep" :disabled="currentStep === 0">
+            <i class="bi bi-arrow-right"></i> قبلی
+          </button>
+          <div>
+            <button class="btn btn-danger me-2" @click="cancelForm">
+              <i class="bi bi-x"></i> انصراف
+            </button>
+            <button v-if="currentStep < steps.length - 1" class="btn btn-primary" @click="nextStep">
+              بعدی <i class="bi bi-arrow-left"></i>
+            </button>
+            <button v-else class="btn btn-success" :disabled="loading" @click="submitForm">
+              <i class="bi bi-save2"></i> بروزرسانی
+            </button>
           </div>
-        </form>
-
-        <div class="d-flex gap-2 mt-3">
-          <button class="btn btn-primary" @click="saveStep2" :disabled="!variantCombinations.length || loading">
-            <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-            <i v-else class="bi bi-save2"></i>
-            <span class="mx-1">ذخیره مرحله دوم</span>
-          </button>
-
-          <button type="button" class="btn btn-outline-secondary" @click="skipStep2" :disabled="loading">
-            <i class="bi bi-skip-forward"></i>
-            <span class="mx-1">رد شدن از این مرحله</span>
-          </button>
         </div>
       </div>
-
-      <!-- مرحله سوم: مشخصات -->
-      <div class="bg-gray" v-else-if="currentStep === 2">
-        <div class="border-box speci">
-          <h3>
-            <i class="bi bi-table"></i>
-            <span>جدول مشخصات</span>
-          </h3>
-          <form>
-            <div class="col-md-12 mb-3">
-              <label>مشخصات:</label>
-              <Treeselect :valueFormat="'object'" v-model="selectedSpecification" :multiple="true"
-                :options="specification" :normalizer="specificationNormalizer" />
-            </div>
-            <template v-for="ss in selectedSpecification" :key="ss.id">
-              <div class="col-md-12 mb-3">
-                <label>انتخاب {{ ss.title }}:</label>
-                <Treeselect :valueFormat="'object'" v-model="selectedSpecificationValues[ss.id]" :multiple="true"
-                  :options="ss.values" :normalizer="attributeValuesNormalizer" />
-              </div>
-            </template>
-          </form>
-        </div>
-        <button class="btn btn-primary mt-3" @click="saveStep3" :disabled="!selectedSpecification.length || loading">
-          <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-          <i v-else class="bi bi-save2"></i>
-          <span class="mx-1">ذخیره مرحله سوم</span>
-        </button>
-      </div>
-    </template>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, computed } from 'vue'
-import Treeselect from 'vue3-treeselect'
-import 'vue3-treeselect/dist/vue3-treeselect.css'
-import Editor from '@/components/shared/Editor.vue'
-import { toast } from 'vue3-toastify'
-import axios from 'axios'
-import { useRoute } from 'vue-router'
-import { useAdmin } from '@/stores/modules/admin'
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import { toast } from 'vue3-toastify';
+import { useRoute, useRouter } from 'vue-router';
+import { useAdmin } from '@/stores/modules/admin';
+import Treeselect from 'vue3-treeselect';
+import 'vue3-treeselect/dist/vue3-treeselect.css';
+import Editor from '@/components/shared/editor.vue';
 
-const store = useAdmin()
-const checkPermission = store.checkPermission
-const route = useRoute()
-const productId = route.params.id
+const store = useAdmin();
+const checkPermission = store.checkPermission;
+const route = useRoute();
+const router = useRouter();
+const productId = route.params.id;
+const baseImageAddress = window.baseImageAddress;
 
-// baseImageAddress در main.js روی window تعریف شده
-const baseImageAddress = window.baseImageAddress
-
-const currentStep = ref(0)
-const product = ref(null)
-const loading = ref(false)
-const initialLoading = ref(true)
-
+const loading = ref(false);
+const currentStep = ref(0);
 const steps = ref([
-  { label: 'محصول', icon: 'bi bi-file-text', enabled: true, completed: false },
-  { label: 'تنوع‌ها', icon: 'bi bi-palette', enabled: false, completed: false },
-  { label: 'مشخصات', icon: 'bi bi-table', enabled: false, completed: false },
-])
+  { label: 'اطلاعات اصلی', icon: 'bi-info-circle' },
+  { label: 'قیمت', icon: 'bi-coin' },
+  { label: 'تصاویر', icon: 'bi-images' },
+  { label: 'ویدیو', icon: 'bi-play-circle' },
+  { label: 'دسته‌بندی', icon: 'bi-tags' },
+  { label: 'ویژگی‌ها', icon: 'bi-list-ul' }
+]);
+
+const productTypes = ref([]);
+const categoryOptions = ref([]);
+const attributes = ref([]);
+const errors = ref({});
+const existingImages = ref([]);
+const newImages = ref([]);
+const newVideo = ref(null);
+const videoDeleted = ref(false);
 
 const form = ref({
+  product_type_id: '',
   title: '',
-  images: [],
   description: '',
-  categories: [],
-  main_image: '',
+  status: 'draft',
+  price: 0,
+  discount_value: null,
+  discount_type: null,
+  is_free: false,
   meta_title: '',
   meta_description: '',
-  status: '',
-  discount_value: '',
-  discount_type: '',
-  barcode: '',
-  sku: '',
-  stock: '',
-  price: '',
-  video: '',
-})
+  categories: [],
+  attributes: {},
+  video: null
+});
 
-const errors = ref({ step1: {}, step2: {}, step3: {} })
+const normalizer = node => ({ id: node.id, label: node.title, children: node.all_children });
 
-// آپلودر فایل‌ها
-const mainImageChanged = ref(false)
-const mainVideoChanged = ref(false)
-const deletedImages = ref([])
-const backupImages = ref([])
-const oldMainImage = ref([])
-const oldMainVideo = ref([])
-const oldImages = ref([])
-
-const categoryOptions = ref([])
-const attributes = ref([])
-const variantCombinations = ref([])
-const backupVariantCombinations = ref([])
-
-// پرچم برای جلوگیری از تولید زودهنگام ترکیبات هنگام لود اولیه‌ی داده
-const isHydrating = ref(true)
-
-const selectedAttibutes = ref([])
-const attributeValue = reactive({})
-
-const specification = ref([])
-const selectedSpecification = ref([])
-const selectedSpecificationValues = reactive({})
-
-// --- نرمالایزرها ---
-const normalizer = (node) => ({ id: node.id, label: node.title, children: node.all_children })
-const attributeNormalizer = (node) => ({ id: node.id, label: node.name })
-const attributeValuesNormalizer = (node) => ({ id: node.id, label: node.value })
-const specificationNormalizer = (node) => ({ id: node.id, label: node.title, values: node.values })
-
-function attrName(id) {
-  const attr = attributes.value.find((a) => a.id == id)
-  return attr ? attr.name : 'گزینه‌ها'
-}
-
-function attributeOptionsFor(attributeId) {
-  const found = attributes.value.find((attr) => attr.id == attributeId)
-  return found ? found.values : []
-}
-
-const attributesWithValues = computed(() =>
-  selectedAttibutes.value.filter((id) => attributeValue[id] && attributeValue[id].length)
-)
-
-// --- تولید ترکیب‌های تنوع برای هر تعداد ویژگی (cartesian product) ---
-function generateCombinations() {
-  const activeLists = attributesWithValues.value.map((id) => attributeValue[id])
-
-  let newVariantList = []
-
-  if (activeLists.length) {
-    newVariantList = activeLists
-      .reduce(
-        (acc, list) => {
-          const result = []
-          for (const combo of acc) {
-            for (const item of list) {
-              result.push([...combo, item])
-            }
-          }
-          return result
-        },
-        [[]]
-      )
-      .map((values) => {
-        const uid = 'uid_' + values.map((v) => v.id).join('_')
-        return {
-          uid,
-          id: '',
-          sku: '',
-          price: '',
-          stock: '',
-          values: values.map((v) => ({ id: v.id, value: v.value })),
-        }
-      })
-  }
-
-  // حفظ مقادیر sku/price/stock/id برای ترکیب‌هایی که از قبل وجود داشتن
-  newVariantList = newVariantList.map((newVariant) => {
-    const existing = variantCombinations.value.find((old) => old.uid === newVariant.uid)
-    return existing ? { ...existing, values: newVariant.values } : newVariant
-  })
-
-  variantCombinations.value = newVariantList
-}
-
-// حذف مقادیر ویژگی‌هایی که از انتخاب خارج شدن
-function cleanupAttributeValues() {
-  for (const keyId in attributeValue) {
-    if (!selectedAttibutes.value.includes(Number(keyId))) {
-      delete attributeValue[keyId]
+const finalPrice = computed(() => {
+  if (form.value.is_free) return 0;
+  let price = form.value.price || 0;
+  if (form.value.discount_value && form.value.discount_value > 0) {
+    if (form.value.discount_type === 'percent') {
+      price = price - (price * form.value.discount_value / 100);
+    } else {
+      price = price - form.value.discount_value;
     }
+    return Math.max(0, price);
+  }
+  return price;
+});
+
+function numberFormat(value) {
+  if (!value && value !== 0) return '۰';
+  return new Intl.NumberFormat('fa-IR').format(value);
+}
+
+function goToStep(index) {
+  if (index <= currentStep.value) {
+    currentStep.value = index;
   }
 }
 
-watch(
-  attributeValue,
-  () => {
-    if (!isHydrating.value) generateCombinations()
-  },
-  { deep: true }
-)
-
-watch(
-  selectedAttibutes,
-  () => {
-    if (isHydrating.value) return
-    cleanupAttributeValues()
-    generateCombinations()
-  },
-  { deep: true }
-)
-
-onMounted(async () => {
-  try {
-    await Promise.all([loadCategories(), loadAttributes(), loadSpecification()])
-    await loadProduct()
-  } catch (e) {
-    toast.error('خطا در بارگذاری اطلاعات محصول')
-  } finally {
-    initialLoading.value = false
+function nextStep() {
+  if (currentStep.value < steps.value.length - 1) {
+    currentStep.value++;
   }
-})
+}
 
-async function loadSpecification() {
-  const res = await axios.get('/all-specification')
-  specification.value = res.data.data
+function prevStep() {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+  }
 }
-async function loadCategories() {
-  const res = await axios.get('/categories')
-  categoryOptions.value = res.data.data
-}
-async function loadAttributes() {
-  const res = await axios.get('/attributes')
-  attributes.value = res.data.data
+
+function cancelForm() {
+  router.push('/products');
 }
 
 async function loadProduct() {
-  const res = await axios.get(`/products/${productId}`)
-  product.value = res.data
+  try {
+    const { data } = await axios.get(`/products/${productId}`);
+    const product = data.data;
+    
+    form.value = {
+      product_type_id: product.product_type_id,
+      title: product.title,
+      description: product.description,
+      status: product.status,
+      price: product.price,
+      discount_value: product.discount_value,
+      discount_type: product.discount_type,
+      is_free: product.is_free,
+      meta_title: product.meta_title,
+      meta_description: product.meta_description,
+      categories: product.categories.map(c => c.id),
+      attributes: {},
+      video: product.video
+    };
 
-  Object.assign(form.value, {
-    title: product.value.title,
-    description: product.value.description,
-    categories: product.value.categories.map((c) => c.id),
-    meta_title: product.value.meta_title,
-    meta_description: product.value.meta_description,
-    status: product.value.status,
-    discount_value: product.value.discount_value,
-    discount_type: product.value.discount_type,
-    barcode: product.value.barcode,
-    sku: product.value.sku,
-    stock: product.value.stock,
-    price: product.value.price,
-  })
+    // بارگذاری تصاویر
+    existingImages.value = product.images.map(img => ({
+      ...img,
+      is_deleted: false
+    })) || [];
 
-  backupImages.value = product.value.images ?? []
-
-  if (product.value.video) {
-    oldMainVideo.value = [
-      {
-        name: product.value.video.split('/').pop(),
-        size: 0,
-        type: 'video/*',
-        ext: product.value.video.split('.').pop(),
-        url: `${baseImageAddress}${product.value.video}`,
-      },
-    ]
+    // بارگذاری ویژگی‌ها
+    await loadAttributes();
+    
+    // مقداردهی ویژگی‌ها
+    if (product.attribute_values) {
+      product.attribute_values.forEach(attr => {
+        form.value.attributes[attr.product_attribute_id] = attr.value;
+      });
+    }
+  } catch (err) {
+    toast.error('خطا در بارگذاری محصول');
+    router.push('/products');
   }
-
-  if (product.value.main_image) {
-    oldMainImage.value = [
-      {
-        name: product.value.main_image.split('/').pop(),
-        size: 0,
-        type: 'image/jpeg',
-        ext: product.value.main_image.split('.').pop(),
-        url: `${baseImageAddress}${product.value.main_image}`,
-      },
-    ]
-  }
-
-  if (product.value.images && product.value.images.length) {
-    oldImages.value = product.value.images.map((img) => ({
-      id: img.id,
-      name: img.path.split('/').pop(),
-      size: 0,
-      type: 'image/jpeg',
-      ext: img.path.split('.').pop(),
-      url: `${baseImageAddress}${img.path}`,
-    }))
-  }
-
-  steps.value[0].completed = true
-  steps.value[1].enabled = true
-  steps.value[2].enabled = true
-
-  // بارگذاری واریانت‌های موجود
-  if (product.value.variants && product.value.variants.length) {
-    selectedAttibutes.value = []
-    variantCombinations.value = []
-
-    product.value.variants.forEach((v) => {
-      let uid = 'uid'
-      v.values.forEach((val) => {
-        uid += `_${val.id}`
-        if (!selectedAttibutes.value.includes(Number(val.attribute_id))) {
-          selectedAttibutes.value.push(Number(val.attribute_id))
-        }
-        if (!attributeValue[val.attribute_id]) {
-          attributeValue[val.attribute_id] = []
-        }
-        if (attributeValue[val.attribute_id].findIndex((av) => av.id == val.id) === -1) {
-          attributeValue[val.attribute_id].push({ id: val.id, value: val.value })
-        }
-      })
-
-      variantCombinations.value.push({
-        price: v.price,
-        uid,
-        id: v.id,
-        sku: v.sku,
-        stock: v.stock,
-        values: v.values.map((val) => ({ id: val.id, value: val.value })),
-      })
-    })
-
-    backupVariantCombinations.value = JSON.parse(JSON.stringify(variantCombinations.value))
-  }
-
-  // بارگذاری مشخصات موجود
-  if (product.value.specifications && product.value.specifications.length) {
-    product.value.specifications.forEach((item) => {
-      selectedSpecification.value.push(item)
-      selectedSpecificationValues[item.id] = item.values
-    })
-  }
-
-  // از این به بعد watch ها فعال می‌شن و دیگه دیتای هیدریت‌شده بازنویسی نمی‌شه
-  isHydrating.value = false
 }
 
-// --- فایل‌ها ---
-// آپلودر گالری تصاویر (چندتایی)
+async function loadProductTypes() {
+  try {
+    const { data } = await axios.get('/product-types');
+    productTypes.value = data.data.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function loadCategories() {
+  try {
+    const { data } = await axios.get('/categories');
+    categoryOptions.value = data.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function loadAttributes() {
+  if (!form.value.product_type_id) {
+    attributes.value = [];
+    return;
+  }
+  try {
+    const { data } = await axios.get(`/product-types/${form.value.product_type_id}/attributes`);
+    attributes.value = data.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// مدیریت تصاویر
 function imagesLoaded(files) {
-  form.value.images = files.map((f) => f.file)
-}
-function imageDeleted(fileRecord, removeFn) {
-  // اگه عکس از تصاویر قدیمی (دارای id) بود، برای حذف سمت سرور علامت بزن
-  if (fileRecord.id) {
-    deletedImages.value.push(fileRecord.id)
-  } else {
-    // عکس تازه‌آپلودشده‌ای که هنوز سیو نشده، فقط از لیست ارسال خارج می‌شه
-    form.value.images = form.value.images.filter((f) => f !== fileRecord.file)
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      newImages.value.push({
+        file: file.file,
+        url: e.target.result,
+        name: file.file.name
+      });
+    };
+    reader.readAsDataURL(file.file);
   }
-  removeFn()
 }
 
-// آپلودر تصویر اصلی (تکی)
-function imageLoaded(files) {
-  form.value.main_image = files?.[0]?.file ?? ''
-  mainImageChanged.value = true
+function markImageForDeletion(index) {
+  const image = existingImages.value[index];
+  if (image.id) {
+    image.is_deleted = !image.is_deleted;
+  }
 }
+
+function removeNewImage(index) {
+  newImages.value.splice(index, 1);
+}
+
+// مدیریت ویدیو
 function videoLoaded(files) {
-  form.value.video = files?.[0]?.file ?? ''
+  if (files.length === 0) return;
+  const file = files[0].file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    newVideo.value = e.target.result;
+    form.value.video = file;
+  };
+  reader.readAsDataURL(file);
 }
 
-
-function mainImageRemoved(_, removeFn) {
-
-  mainImageChanged.value = true
-  form.value.main_image = ''
-}
-function onMainVideoChange() {
-  mainVideoChanged.value = true
-}
-function mainVideoRemoved(_, removeFn) {
-  mainVideoChanged.value = true
-  form.value.video = ''
-  removeFn()
+function deleteVideo() {
+  videoDeleted.value = true;
+  form.value.video = null;
+  newVideo.value = null;
+  toast.info('ویدیو برای حذف علامت‌گذاری شد');
 }
 
-async function saveStep1() {
-  errors.value.step1 = {}
-  loading.value = true
+// ذخیره نهایی
+async function submitForm() {
+  errors.value = {};
+  loading.value = true;
 
   try {
-    const formData = new FormData()
-
-    Object.keys(form.value).forEach((key) => {
-      if (key === 'images') return // جدا مدیریت می‌شه
-      if (key === 'categories') return // جدا مدیریت می‌شه
-
-      if (key === 'video') {
-        if (mainVideoChanged.value) {
-          // کاربر فایل جدید گذاشته یا حذف کرده؛ اگه خالیه یعنی حذف شده
-          if (form.value.video) formData.append('video', form.value.video)
-          else formData.append('remove_video', '1')
-        }
-        // اگه تغییری نداده، چیزی ارسال نمی‌کنیم تا ویدیوی فعلی دست‌نخورده بماند
-        return
+    const formData = new FormData();
+    
+    // اطلاعات پایه
+    formData.append('product_type_id', form.value.product_type_id);
+    formData.append('title', form.value.title);
+    formData.append('description', form.value.description || '');
+    formData.append('status', form.value.status);
+    formData.append('price', form.value.price || 0);
+    formData.append('discount_value', form.value.discount_value || '');
+    formData.append('discount_type', form.value.discount_type || '');
+    formData.append('is_free', form.value.is_free ? 1 : 0);
+    formData.append('meta_title', form.value.meta_title || '');
+    formData.append('meta_description', form.value.meta_description || '');
+    
+    // دسته‌بندی‌ها
+    formData.append('categories', JSON.stringify(form.value.categories));
+    
+    // ویژگی‌ها
+    formData.append('attributes', JSON.stringify(form.value.attributes));
+    
+    // تصاویر حذف شده
+    const deletedImageIds = existingImages.value
+      .filter(img => img.is_deleted && img.id)
+      .map(img => img.id);
+    
+    if (deletedImageIds.length > 0) {
+      formData.append('deleted_images', JSON.stringify(deletedImageIds));
+    }
+    
+    // تصاویر جدید
+    if (newImages.value.length > 0) {
+      for (const img of newImages.value) {
+        formData.append('images[]', img.file);
       }
+    }
+    
+    // ویدیو
+    if (form.value.video && typeof form.value.video === 'object') {
+      formData.append('video', form.value.video);
+    }
+    
+    // حذف ویدیو
+    if (videoDeleted.value) {
+      formData.append('delete_video', true);
+    }
 
-      if (key === 'main_image') {
-        if (mainImageChanged.value) {
-          if (form.value.main_image) formData.append('main_image', form.value.main_image)
-          else formData.append('main_image', '')
-        } else {
-          formData.append('main_image', product.value.main_image)
-        }
-        return
+    const { data } = await axios.post(`/products/${productId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { _method: 'PUT' }
+    });
+    
+    toast.success('محصول با موفقیت بروزرسانی شد!');
+    router.push('/products');
+  } catch (e) {
+    if (e.response?.data?.errors) {
+      errors.value = e.response.data.errors;
+      if (errors.value.title || errors.value.product_type_id) {
+        currentStep.value = 0;
+      } else if (errors.value.price) {
+        currentStep.value = 1;
+      } else if (errors.value.images) {
+        currentStep.value = 2;
+      } else if (errors.value.categories) {
+        currentStep.value = 4;
+      } else if (errors.value.attributes) {
+        currentStep.value = 5;
       }
-
-      // سایر فیلدها؛ شامل مقادیر خالی/صفر هم می‌شه (برخلاف نسخه قبلی)
-      const value = form.value[key]
-      formData.append(key, value === null || value === undefined ? '' : value)
-    })
-
-    form.value.images.forEach((img) => {
-      formData.append('images[]', img)
-    })
-
-    if (form.value.categories && form.value.categories.length) {
-      form.value.categories.forEach((catId) => formData.append('categories[]', catId))
     }
-
-    if (deletedImages.value.length) {
-      deletedImages.value.forEach((id) => formData.append('deleted_images[]', id))
-    }
-
-    formData.append('_method', 'PUT')
-    const res = await axios.post(`/products/${productId}`, formData)
-    product.value = res.data
-
-    steps.value[0].completed = true
-    steps.value[1].enabled = true
-    steps.value[2].enabled = true
-    toast.success('مرحله اول با موفقیت بروزرسانی شد!')
-  } catch (e) {
-    if (e.response?.data?.errors) errors.value.step1 = e.response.data.errors
-    toast.error('خطا در ذخیره مرحله اول')
+    toast.error('خطا در بروزرسانی محصول');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-async function saveStep2() {
-  errors.value.step2 = {}
-
-  if (!variantCombinations.value.length) {
-    toast.warning('هیچ تنوعی برای ذخیره وجود ندارد')
-    return
-  }
-
-  const validVariants = variantCombinations.value.filter((v) => v.values && v.values.length > 0)
-
-  if (!validVariants.length) {
-    toast.warning('هیچ ترکیب معتبری برای ذخیره وجود ندارد')
-    return
-  }
-
-  const formData = new FormData()
-  formData.append('product_id', product.value.id)
-
-  validVariants.forEach((v, index) => {
-    formData.append(`variants[${index}][id]`, v.id || '')
-    formData.append(`variants[${index}][sku]`, v.sku || '')
-    formData.append(`variants[${index}][price]`, v.price || 0)
-    formData.append(`variants[${index}][stock]`, v.stock ?? 0)
-    v.values.forEach((AV) => {
-      if (AV && AV.id) formData.append(`variants[${index}][values][]`, AV.id)
-    })
-  })
-
-  loading.value = true
-  try {
-    await axios.post(`/products-variants/${product.value.id}/update-all`, formData)
-    steps.value[1].completed = true
-    backupVariantCombinations.value = JSON.parse(JSON.stringify(variantCombinations.value))
-    toast.success('مرحله دوم با موفقیت بروزرسانی شد!')
-  } catch (e) {
-    if (e.response?.data?.errors) errors.value.step2 = e.response.data.errors
-    toast.error('خطا در ذخیره مرحله دوم: ' + (e.response?.data?.message || e.message))
-  } finally {
-    loading.value = false
-  }
-}
-
-// رد شدن از مرحله تنوع بدون تماس با API (مثلاً وقتی محصول از قبل واریانت دارد
-// و کاربر فقط می‌خواد بدون تغییر به مرحله بعد برود)
-function skipStep2() {
-  steps.value[1].completed = true
-  currentStep.value = 2
-}
-
-async function saveStep3() {
-  errors.value.step3 = {}
-
-  if (!selectedSpecification.value.length) {
-    toast.warning('هیچ مشخصه‌ای برای ذخیره انتخاب نشده است')
-    return
-  }
-
-  const formData = new FormData()
-  let index = 0
-
-  for (const key in selectedSpecificationValues) {
-    if (selectedSpecificationValues[key] && selectedSpecificationValues[key].length) {
-      selectedSpecificationValues[key].forEach((spec) => {
-        // spec یک آبجکت {id, value} است (طبق valueFormat: 'object')
-        formData.append(`specifications[${index}][specification_value_id]`, spec.id)
-        formData.append(`specifications[${index}][specification_id]`, key)
-        index++
-      })
-    }
-  }
-
-  loading.value = true
-  try {
-    await axios.post(`/sync-specification/${product.value.id}`, formData)
-    steps.value[2].completed = true
-    toast.success('مرحله سوم با موفقیت ذخیره شد!')
-  } catch (e) {
-    if (e.response?.data?.errors) errors.value.step3 = e.response.data.errors
-    toast.error('خطا در ذخیره مرحله سوم: ' + (e.response?.data?.message || e.message))
-  } finally {
-    loading.value = false
-  }
-}
+onMounted(() => {
+  loadProductTypes();
+  loadCategories();
+  loadProduct();
+});
 </script>
 
 <style scoped>
-.step-buttons {
-  flex-wrap: wrap;
-  width: max(50%, 380px);
-  margin: auto;
+.steps-wrapper {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
 }
 
-.step-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  position: relative;
 }
 
-.step-btn.active {
-  box-shadow: 0 0 0 2px #0d6efd inset;
+.steps-header::before {
+  content: '';
+  position: absolute;
+  top: 25px;
+  left: 40px;
+  right: 40px;
+  height: 3px;
+  background: #dee2e6;
+  z-index: 1;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.step-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.step-item.active .step-circle {
+  background: #0d6efd;
+  color: white;
+  box-shadow: 0 0 0 5px rgba(13, 110, 253, 0.2);
+}
+
+.step-item.completed .step-circle {
+  background: #198754;
+  color: white;
+}
+
+.step-circle .step-number {
+  display: none;
+}
+
+.step-label {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c757d;
+  text-align: center;
+}
+
+.step-item.active .step-label {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.step-item.completed .step-label {
+  color: #198754;
+}
+
+.step-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 300px;
+}
+
+.step-panel {
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
-  .step-buttons {
-    flex-direction: column;
-    width: 100%;
+  .steps-header {
+    flex-wrap: wrap;
+    gap: 10px;
   }
-
-  .step-divider-wrap {
-    transform: rotate(90deg);
-    margin: 0.25rem 0;
+  .steps-header::before {
+    display: none;
   }
-}
-
-.border-box {
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 0 5px #1213;
-}
-
-.formSetp1 {
-  display: grid;
-  grid-template-columns: 9fr 3fr;
-  width: 95%;
-  margin: 24px auto;
-}
-
-@media (max-width: 768px) {
-  .formSetp1 {
-    grid-template-columns: 1fr;
-    width: 100%;
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
   }
-}
-
-.speci,
-.formSetp2 {
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 0 5px #1213;
-  width: 95%;
-  margin: 24px auto;
-}
-
-.metaBox {
-  width: 95%;
-  margin: 24px auto;
-}
-
-.g-3 {
-  gap: 16px;
+  .step-label {
+    font-size: 10px;
+  }
 }
 </style>

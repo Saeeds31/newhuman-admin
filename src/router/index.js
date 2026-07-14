@@ -72,22 +72,53 @@ const routes = [
     name: "wallets",
     component: () => import("@/views/wallet/Wallet/list.vue"),
   },
-
   {
-    path: "/products/specification/create",
-    name: "products-specification-create",
-    component: () => import("@/views/products/Specification/create.vue"),
+    path: "/files/categories",
+    name: "files-categories",
+    component: () => import("@/views/files/Category/list.vue"),
   },
   {
-    path: "/products/specification/:id/edit",
-    name: "products-specification-edit",
-    component: () => import("@/views/products/Specification/edit.vue"),
+    path: "/files/categories/create",
+    name: "files-categories-create",
+    component: () => import("@/views/files/Category/create.vue"),
+  },
+  {
+    path: "/files/categories/:id/edit",
+    name: "files-categories-edit",
+    component: () => import("@/views/files/Category/edit.vue"),
   },
 
   {
-    path: "/products/specification",
-    name: "products-specification",
-    component: () => import("@/views/products/Specification/list.vue"),
+    path: "/files",
+    name: "files-list",
+    component: () => import("@/views/files/File/list.vue"),
+  },
+  {
+    path: "/files/create",
+    name: "files-create",
+    component: () => import("@/views/files/File/create.vue"),
+  },
+  {
+    path: "/files/:id/edit",
+    name: "files-edit",
+    component: () => import("@/views/files/File/edit.vue"),
+  },
+
+  {
+    path: "/products/product-types/create",
+    name: "products-product-types-create",
+    component: () => import("@/views/products/ProductType/create.vue"),
+  },
+  {
+    path: "/products/product-types/:id/edit",
+    name: "products-product-types-edit",
+    component: () => import("@/views/products/ProductType/edit.vue"),
+  },
+
+  {
+    path: "/products/product-types",
+    name: "products-product-types",
+    component: () => import("@/views/products/ProductType/list.vue"),
   },
   {
     path: "/products/attributes/create",
@@ -125,6 +156,13 @@ const routes = [
     name: "products-categories-edit",
     component: () => import("@/views/products/Category/edit.vue"),
   },
+  
+  {
+    path: "/products/product-attributes",
+    name: "products-attributes",
+    component: () => import("@/views/products/ProductAttributes/list.vue"),
+  },
+
 
   {
     path: "/products",
@@ -297,8 +335,6 @@ const routes = [
   },
   //
 
-
-  
   {
     path: "/comments/products",
     name: "comments-products",
