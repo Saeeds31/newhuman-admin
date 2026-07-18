@@ -179,6 +179,84 @@
                 </div>
               </div>
             </div>
+            <!-- استپ ۷: فایل‌های محصول (جدید) -->
+            <div v-if="currentStep === 6" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <h5>فایل‌های محصول</h5>
+                  <p class="text-muted">آدرس فایل‌های قابل دانلود برای این محصول را وارد کنید</p>
+                  <hr />
+                </div>
+
+                <!-- لیست فایل‌های اضافه شده -->
+                <div class="col-12" v-if="productFiles.length > 0">
+                  <div class="table-responsive">
+                    <table class="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>عنوان</th>
+                          <th>آدرس فایل</th>
+                          <th>رایگان</th>
+                          <th>عملیات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(file, index) in productFiles" :key="index">
+                          <td>{{ index + 1 }}</td>
+                          <td>
+                            <input v-model="file.title" type="text" class="form-control form-control-sm"
+                              placeholder="عنوان فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.path" type="text" class="form-control form-control-sm"
+                              placeholder="آدرس فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.is_free" type="checkbox" />
+                          </td>
+                          <td>
+                            <button class="btn btn-sm btn-danger" @click="removeProductFile(index)">
+                              <i class="bi bi-trash3"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- افزودن فایل جدید -->
+                <div class="col-12">
+                  <div class="border p-3 rounded">
+                    <h6>افزودن فایل جدید</h6>
+                    <div class="row">
+                      <div class="col-md-4 mb-2">
+                        <input v-model="newFile.title" type="text" class="form-control"
+                          placeholder="عنوان فایل (اختیاری)" />
+                      </div>
+                      <div class="col-md-5 mb-2">
+                        <input v-model="newFile.path" type="text" class="form-control"
+                          placeholder="آدرس فایل را وارد کنید" />
+                      </div>
+                      <div class="col-md-1 mb-2">
+                        <div class="form-check mt-2">
+                          <input v-model="newFile.is_free" type="checkbox" class="form-check-input" id="file_is_free" />
+                          <label class="form-check-label" for="file_is_free">رایگان</label>
+                        </div>
+                      </div>
+                      <div class="col-md-2 mb-2">
+                        <button class="btn btn-success w-100" @click="addProductFile" :disabled="!newFile.path">
+                          <i class="bi bi-plus"></i> افزودن
+                        </button>
+                      </div>
+                    </div>
+                    <small class="text-muted">آدرس فایل را از بخش مدیریت فایل‌ها کپی کنید</small>
+                    <span v-if="errors.product_files" class="text-danger d-block">{{ errors.product_files[0] }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -227,7 +305,8 @@ const steps = ref([
   { label: 'تصاویر', icon: 'bi-images' },
   { label: 'ویدیو', icon: 'bi-play-circle' },
   { label: 'دسته‌بندی', icon: 'bi-tags' },
-  { label: 'ویژگی‌ها', icon: 'bi-list-ul' }
+  { label: 'ویژگی‌ها', icon: 'bi-list-ul' },
+  { label: 'فایل‌ها', icon: 'bi-file-earmark' } // استپ جدید
 ]);
 
 const productTypes = ref([]);
@@ -236,6 +315,14 @@ const attributes = ref([]);
 const errors = ref({});
 const uploadedImages = ref([]);
 const uploadedVideo = ref(null);
+const productFiles = ref([]);
+
+// فرم فایل جدید
+const newFile = ref({
+  title: '',
+  path: '',
+  is_free: false
+});
 
 const form = ref({
   product_type_id: '',
@@ -251,7 +338,8 @@ const form = ref({
   categories: [],
   attributes: {},
   images: [],
-  video: null
+  video: null,
+  product_files: [] // فایل‌های محصول
 });
 
 const normalizer = node => ({ id: node.id, label: node.title, children: node.all_children });
@@ -273,6 +361,14 @@ const finalPrice = computed(() => {
 function numberFormat(value) {
   if (!value && value !== 0) return '۰';
   return new Intl.NumberFormat('fa-IR').format(value);
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function goToStep(index) {
@@ -332,9 +428,9 @@ async function loadAttributes() {
     console.error(err);
   }
 }
+
 function imagesLoaded(files) {
   for (const file of files) {
-    // فقط ذخیره در آرایه
     const reader = new FileReader();
     reader.onload = (e) => {
       uploadedImages.value.push({
@@ -346,6 +442,7 @@ function imagesLoaded(files) {
     reader.readAsDataURL(file.file);
   }
 }
+
 function removeImage(index) {
   uploadedImages.value.splice(index, 1);
 }
@@ -356,10 +453,51 @@ function videoLoaded(files) {
   const reader = new FileReader();
   reader.onload = (e) => {
     uploadedVideo.value = e.target.result;
-    form.value.video = file; // ذخیره فایل برای ارسال
+    form.value.video = file;
   };
   reader.readAsDataURL(file);
 }
+
+// مدیریت فایل‌های محصول
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    newFile.value.file = file;
+    // اگر عنوان وارد نشده، از نام فایل استفاده کن
+    if (!newFile.value.title) {
+      newFile.value.title = file.name.replace(/\.[^/.]+$/, '');
+    }
+  }
+}
+
+
+function addProductFile() {
+  if (!newFile.value.path) {
+    toast.warning('لطفا آدرس فایل را وارد کنید');
+    return;
+  }
+
+  productFiles.value.push({
+    title: newFile.value.title || newFile.value.path.split('/').pop() || 'فایل بدون عنوان',
+    description: '',
+    path: newFile.value.path, // فقط آدرس
+    is_free: newFile.value.is_free,
+    sort_order: productFiles.value.length
+  });
+
+  // reset
+  newFile.value = {
+    title: '',
+    path: '',
+    is_free: false
+  };
+
+  toast.success('فایل اضافه شد');
+}
+function removeProductFile(index) {
+  productFiles.value.splice(index, 1);
+}
+
 
 async function submitForm() {
   errors.value = {};
@@ -398,6 +536,17 @@ async function submitForm() {
       formData.append('video', form.value.video);
     }
 
+    // فایل‌های محصول - فقط آدرس
+    if (productFiles.value.length > 0) {
+      for (const [index, file] of productFiles.value.entries()) {
+        formData.append(`product_files[${index}][title]`, file.title || '');
+        formData.append(`product_files[${index}][description]`, file.description || '');
+        formData.append(`product_files[${index}][path]`, file.path);
+        formData.append(`product_files[${index}][is_free]`, file.is_free ? 1 : 0);
+        formData.append(`product_files[${index}][sort_order]`, index);
+      }
+    }
+
     const { data } = await axios.post('/products', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -415,6 +564,8 @@ async function submitForm() {
         currentStep.value = 2;
       } else if (errors.value.categories) {
         currentStep.value = 4;
+      } else if (errors.value.product_files) {
+        currentStep.value = 6;
       }
     }
     toast.error('خطا در ذخیره محصول');
@@ -422,6 +573,7 @@ async function submitForm() {
     loading.value = false;
   }
 }
+
 onMounted(() => {
   loadProductTypes();
   loadCategories();

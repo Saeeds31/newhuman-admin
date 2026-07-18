@@ -226,6 +226,120 @@
                 </div>
               </div>
             </div>
+
+            <!-- استپ ۷: فایل‌های محصول -->
+            <div v-if="currentStep === 6" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <h5>فایل‌های محصول</h5>
+                  <p class="text-muted">مدیریت فایل‌های قابل دانلود این محصول</p>
+                  <hr />
+                </div>
+
+                <!-- لیست فایل‌های موجود -->
+                <div class="col-12" v-if="existingFiles.length > 0">
+                  <label class="form-label">فایل‌های موجود</label>
+                  <div class="table-responsive">
+                    <table class="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>عنوان</th>
+                          <th>آدرس فایل</th>
+                          <th>رایگان</th>
+                          <th>عملیات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(file, index) in existingFiles" :key="file.id || index">
+                          <td>{{ index + 1 }}</td>
+                          <td>
+                            <input v-model="file.title" type="text" class="form-control form-control-sm" placeholder="عنوان فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.path" type="text" class="form-control form-control-sm" placeholder="آدرس فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.is_free" type="checkbox" />
+                          </td>
+                          <td>
+                            <button class="btn btn-sm btn-danger" @click="markFileForDeletion(index)">
+                              <i class="bi bi-x"></i>
+                            </button>
+                            <span v-if="file.is_deleted" class="badge bg-warning ms-1">در انتظار حذف</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- لیست فایل‌های جدید -->
+                <div class="col-12" v-if="newFiles.length > 0">
+                  <label class="form-label">فایل‌های جدید</label>
+                  <div class="table-responsive">
+                    <table class="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>عنوان</th>
+                          <th>آدرس فایل</th>
+                          <th>رایگان</th>
+                          <th>عملیات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(file, index) in newFiles" :key="'new-' + index">
+                          <td>{{ index + 1 }}</td>
+                          <td>
+                            <input v-model="file.title" type="text" class="form-control form-control-sm" placeholder="عنوان فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.path" type="text" class="form-control form-control-sm" placeholder="آدرس فایل" />
+                          </td>
+                          <td>
+                            <input v-model="file.is_free" type="checkbox" />
+                          </td>
+                          <td>
+                            <button class="btn btn-sm btn-danger" @click="removeNewFile(index)">
+                              <i class="bi bi-trash3"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- افزودن فایل جدید -->
+                <div class="col-12">
+                  <div class="border p-3 rounded">
+                    <h6>افزودن فایل جدید</h6>
+                    <div class="row">
+                      <div class="col-md-4 mb-2">
+                        <input v-model="newFile.title" type="text" class="form-control" placeholder="عنوان فایل (اختیاری)" />
+                      </div>
+                      <div class="col-md-5 mb-2">
+                        <input v-model="newFile.path" type="text" class="form-control" placeholder="آدرس فایل را وارد کنید" />
+                      </div>
+                      <div class="col-md-1 mb-2">
+                        <div class="form-check mt-2">
+                          <input v-model="newFile.is_free" type="checkbox" class="form-check-input" id="edit_file_is_free" />
+                          <label class="form-check-label" for="edit_file_is_free">رایگان</label>
+                        </div>
+                      </div>
+                      <div class="col-md-2 mb-2">
+                        <button class="btn btn-success w-100" @click="addNewFile" :disabled="!newFile.path">
+                          <i class="bi bi-plus"></i> افزودن
+                        </button>
+                      </div>
+                    </div>
+                    <small class="text-muted">آدرس فایل را از بخش مدیریت فایل‌ها کپی کنید</small>
+                    <span v-if="errors.product_files" class="text-danger d-block">{{ errors.product_files[0] }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -276,7 +390,8 @@ const steps = ref([
   { label: 'تصاویر', icon: 'bi-images' },
   { label: 'ویدیو', icon: 'bi-play-circle' },
   { label: 'دسته‌بندی', icon: 'bi-tags' },
-  { label: 'ویژگی‌ها', icon: 'bi-list-ul' }
+  { label: 'ویژگی‌ها', icon: 'bi-list-ul' },
+  { label: 'فایل‌ها', icon: 'bi-file-earmark' }
 ]);
 
 const productTypes = ref([]);
@@ -285,8 +400,17 @@ const attributes = ref([]);
 const errors = ref({});
 const existingImages = ref([]);
 const newImages = ref([]);
+const existingFiles = ref([]);
+const newFiles = ref([]);
 const newVideo = ref(null);
 const videoDeleted = ref(false);
+
+// فرم فایل جدید
+const newFile = ref({
+  title: '',
+  path: '',
+  is_free: false
+});
 
 const form = ref({
   product_type_id: '',
@@ -374,6 +498,12 @@ async function loadProduct() {
       is_deleted: false
     })) || [];
 
+    // بارگذاری فایل‌ها
+    existingFiles.value = product.files.map(file => ({
+      ...file,
+      is_deleted: false
+    })) || [];
+
     // بارگذاری ویژگی‌ها
     await loadAttributes();
     
@@ -446,6 +576,41 @@ function removeNewImage(index) {
   newImages.value.splice(index, 1);
 }
 
+// مدیریت فایل‌ها
+function markFileForDeletion(index) {
+  const file = existingFiles.value[index];
+  if (file.id) {
+    file.is_deleted = !file.is_deleted;
+  }
+}
+
+function addNewFile() {
+  if (!newFile.value.path) {
+    toast.warning('لطفا آدرس فایل را وارد کنید');
+    return;
+  }
+
+  newFiles.value.push({
+    title: newFile.value.title || newFile.value.path.split('/').pop() || 'فایل بدون عنوان',
+    description: '',
+    path: newFile.value.path,
+    is_free: newFile.value.is_free,
+    sort_order: existingFiles.value.length + newFiles.value.length
+  });
+
+  newFile.value = {
+    title: '',
+    path: '',
+    is_free: false
+  };
+
+  toast.success('فایل اضافه شد');
+}
+
+function removeNewFile(index) {
+  newFiles.value.splice(index, 1);
+}
+
 // مدیریت ویدیو
 function videoLoaded(files) {
   if (files.length === 0) return;
@@ -507,6 +672,40 @@ async function submitForm() {
       }
     }
     
+    // فایل‌های موجود (ویرایش شده)
+    const updatedFiles = existingFiles.value
+      .filter(file => !file.is_deleted)
+      .map(file => ({
+        id: file.id,
+        title: file.title,
+        path: file.path,
+        is_free: file.is_free ? 1 : 0,
+        sort_order: file.sort_order || 0
+      }));
+
+    if (updatedFiles.length > 0) {
+      formData.append('updated_files', JSON.stringify(updatedFiles));
+    }
+
+    // فایل‌های حذف شده
+    const deletedFileIds = existingFiles.value
+      .filter(file => file.is_deleted && file.id)
+      .map(file => file.id);
+
+    if (deletedFileIds.length > 0) {
+      formData.append('deleted_files', JSON.stringify(deletedFileIds));
+    }
+
+    // فایل‌های جدید
+    if (newFiles.value.length > 0) {
+      for (const [index, file] of newFiles.value.entries()) {
+        formData.append(`new_files[${index}][title]`, file.title || '');
+        formData.append(`new_files[${index}][path]`, file.path);
+        formData.append(`new_files[${index}][is_free]`, file.is_free ? 1 : 0);
+        formData.append(`new_files[${index}][sort_order]`, existingFiles.value.length + index);
+      }
+    }
+    
     // ویدیو
     if (form.value.video && typeof form.value.video === 'object') {
       formData.append('video', form.value.video);
@@ -514,7 +713,7 @@ async function submitForm() {
     
     // حذف ویدیو
     if (videoDeleted.value) {
-      formData.append('delete_video', true);
+      formData.append('delete_video', '1');
     }
 
     const { data } = await axios.post(`/products/${productId}`, formData, {
@@ -537,6 +736,8 @@ async function submitForm() {
         currentStep.value = 4;
       } else if (errors.value.attributes) {
         currentStep.value = 5;
+      } else if (errors.value.product_files || errors.value.deleted_files) {
+        currentStep.value = 6;
       }
     }
     toast.error('خطا در بروزرسانی محصول');
