@@ -28,7 +28,6 @@
                 <th>نام</th>
                 <th>slug</th>
                 <th>وضعیت</th>
-                <th>عملیات</th>
               </tr>
             </thead>
             <tbody>
@@ -41,18 +40,7 @@
                     {{ item.is_active ? 'فعال' : 'غیرفعال' }}
                   </span>
                 </td>
-                <td>
-                  <router-link v-if="checkPermission(['producttype_update'])"
-                    :to="`/products/product-types/${item.id}/edit`" class="btn btn-sm btn-warning me-2">
-                    <i class="bi bi-pen"></i>
-                    <span> ویرایش</span>
-                  </router-link>
-                  <button class="btn btn-sm btn-danger" v-if="checkPermission(['producttype_delete'])"
-                    @click="deleteItem(item.id)">
-                    <i class="bi bi-trash3-fill"></i>
-                    <span>حذف</span>
-                  </button>
-                </td>
+               
               </tr>
             </tbody>
           </table>
