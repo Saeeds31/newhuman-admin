@@ -156,13 +156,12 @@ const routes = [
     name: "products-categories-edit",
     component: () => import("@/views/products/Category/edit.vue"),
   },
-  
+
   {
     path: "/products/product-attributes",
     name: "products-attributes",
     component: () => import("@/views/products/ProductAttributes/list.vue"),
   },
-
 
   {
     path: "/products",
@@ -283,6 +282,38 @@ const routes = [
     path: "/articles/categories/:id/edit",
     name: "articles-categories-edit",
     component: () => import("@/views/articles/Category/edit.vue"),
+  },
+  // discourse
+
+  {
+    path: "/discourse/list",
+    name: "discourse-list",
+    component: () => import("@/views/discourse/discourse/list.vue"),
+  },
+  {
+    path: "/discourse/create",
+    name: "discourse-create",
+    component: () => import("@/views/discourse/discourse/create.vue"),
+  },
+  {
+    path: "/discourse/:id/edit",
+    name: "discourse-edit",
+    component: () => import("@/views/discourse/discourse/edit.vue"),
+  },
+  {
+    path: "/discourse/categories",
+    name: "discourse-categories",
+    component: () => import("@/views/discourse/category/list.vue"),
+  },
+  {
+    path: "/discourse/categories/create",
+    name: "discourse-categories-create",
+    component: () => import("@/views/discourse/category/create.vue"),
+  },
+  {
+    path: "/discourse/categories/:id/edit",
+    name: "discourse-categories-edit",
+    component: () => import("@/views/discourse/category/edit.vue"),
   },
 
   {

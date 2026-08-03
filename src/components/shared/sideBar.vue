@@ -344,6 +344,25 @@ const menuItems = ref([
     ],
   },
   {
+    name: "نیوتاک",
+    permissions: ['discourse_view'],
+    icon: "bi-chat",
+    children: [
+      {
+        name: "دسته‌بندی‌ها",
+        permissions: ['discourse_view'],
+        link: "/discourse/categories",
+        icon: "bi-tags"
+      },
+      {
+        name: "لیست گفتومان",
+        permissions: ['discourse_view'],
+        link: "/discourse/list",
+        icon: "bi-file-text"
+      },
+    ],
+  },
+  {
     name: "مقالات",
     permissions: ['articlecategory_view', 'article_view'],
     icon: "bi-journal",
