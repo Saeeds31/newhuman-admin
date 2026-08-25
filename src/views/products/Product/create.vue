@@ -337,13 +337,9 @@
 
                       <!-- ضبط شده -->
                       <div v-if="form.child_type === 'recorded'" class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                           <label class="form-label">موجودی</label>
                           <input v-model.number="form.stock" type="number" class="form-control" min="0" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">تعداد فروش</label>
-                          <input v-model.number="form.sold_count" type="number" class="form-control" min="0" />
                         </div>
                       </div>
                     </div>
