@@ -304,16 +304,11 @@ const menuItems = ref([
     permissions: ['comment_products', 'comment_blogs'],
     icon: "bi-chat-dots",
     children: [
+     
       {
-        name: "محصولات",
-        permissions: ['comment_product'],
-        link: "/comments/products",
-        icon: "bi-bag"
-      },
-      {
-        name: "مقالات",
+        name: "کامنت",
         permissions: ['comment_blogs'],
-        link: "/comments/articles",
+        link: "/comments",
         icon: "bi-journal"
       },
     ],

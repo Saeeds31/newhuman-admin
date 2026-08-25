@@ -37,10 +37,43 @@
                   <span v-if="errors.title" class="text-danger">{{ errors.title[0] }}</span>
                 </div>
 
-                <div class="col-md-12 mb-3">
-                  <label class="form-label">توضیحات</label>
-                  <Editor v-model="form.description" />
-                  <span v-if="errors.description" class="text-danger">{{ errors.description[0] }}</span>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">نوع محصول <span class="text-danger">*</span></label>
+                  <select v-model="form.product_kind" @change="onProductKindChange" class="form-control">
+                    <option value="simple">محصول ساده</option>
+                    <option value="parent">محصول والد (کانتینر)</option>
+                    <option value="child">محصول فرزند</option>
+                  </select>
+                  <small class="text-muted d-block">
+                    <span v-if="form.product_kind === 'simple'">محصول عادی با قیمت مشخص</span>
+                    <span v-if="form.product_kind === 'parent'">محصولی که فقط برای گروه‌بندی فرزندان استفاده
+                      می‌شود</span>
+                    <span v-if="form.product_kind === 'child'">محصولی که به یک والد متصل می‌شود</span>
+                  </small>
+                  <span v-if="errors.product_kind" class="text-danger">{{ errors.product_kind[0] }}</span>
+                </div>
+
+                <div class="col-md-6 mb-3" v-if="form.product_kind === 'child'">
+                  <label class="form-label">محصول والد <span class="text-danger">*</span></label>
+                  <select v-model="form.parent_id" class="form-control">
+                    <option value="">انتخاب کنید</option>
+                    <option v-for="parent in parentProducts" :key="parent.id" :value="parent.id">
+                      {{ parent.title }}
+                    </option>
+                  </select>
+                  <small class="text-muted">محصول والد را انتخاب کنید تا این محصول به عنوان فرزند آن ثبت شود</small>
+                  <span v-if="errors.parent_id" class="text-danger">{{ errors.parent_id[0] }}</span>
+                </div>
+
+                <div class="col-md-6 mb-3" v-if="form.product_kind === 'child'">
+                  <label class="form-label">نوع فرزند <span class="text-danger">*</span></label>
+                  <select v-model="form.child_type" class="form-control">
+                    <option value="">انتخاب کنید</option>
+                    <option value="online">آنلاین</option>
+                    <option value="in_person">حضوری</option>
+                    <option value="recorded">ضبط شده</option>
+                  </select>
+                  <span v-if="errors.child_type" class="text-danger">{{ errors.child_type[0] }}</span>
                 </div>
 
                 <div class="col-md-6 mb-3">
@@ -52,12 +85,18 @@
                   </select>
                 </div>
 
+                <div class="col-md-12 mb-3">
+                  <label class="form-label">توضیحات</label>
+                  <Editor v-model="form.description" />
+                  <span v-if="errors.description" class="text-danger">{{ errors.description[0] }}</span>
+                </div>
+
                 <div class="col-md-6 mb-3">
                   <label class="form-label">عنوان متا</label>
                   <input v-model="form.meta_title" type="text" class="form-control" />
                 </div>
 
-                <div class="col-md-12 mb-3">
+                <div class="col-md-6 mb-3">
                   <label class="form-label">توضیحات متا</label>
                   <textarea v-model="form.meta_description" class="form-control" rows="2"></textarea>
                 </div>
@@ -66,7 +105,8 @@
 
             <!-- استپ ۲: قیمت و تخفیف -->
             <div v-if="currentStep === 1" class="step-panel">
-              <div class="row">
+              <!-- قیمت برای محصول ساده -->
+              <div v-if="form.product_kind === 'simple'" class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label">قیمت (تومان)</label>
                   <input v-model.number="form.price" type="number" class="form-control" min="0" />
@@ -98,6 +138,35 @@
                   <label class="form-label">قیمت نهایی</label>
                   <input :value="numberFormat(finalPrice)" type="text" class="form-control" disabled />
                 </div>
+              </div>
+
+              <!-- قیمت برای محصول فرزند -->
+              <div v-if="form.product_kind === 'child'" class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">قیمت (تومان) <span class="text-danger">*</span></label>
+                  <input v-model.number="form.child_price" type="number" class="form-control" min="0" />
+                  <span v-if="errors.child_price" class="text-danger">{{ errors.child_price[0] }}</span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">قیمت تخفیف‌خورده</label>
+                  <input v-model.number="form.child_discount_price" type="number" class="form-control" min="0" />
+                  <span v-if="errors.child_discount_price" class="text-danger">{{ errors.child_discount_price[0]
+                  }}</span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input v-model="form.is_child_free" type="checkbox" class="form-check-input" id="is_child_free" />
+                    <label class="form-check-label" for="is_child_free">این نوع رایگان</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- محصول والد -->
+              <div v-if="form.product_kind === 'parent'" class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                محصول والد قیمتی ندارد. قیمت‌ها در محصولات فرزند تعیین می‌شوند.
               </div>
             </div>
 
@@ -179,8 +248,112 @@
                 </div>
               </div>
             </div>
-            <!-- استپ ۷: فایل‌های محصول (جدید) -->
-            <div v-if="currentStep === 6" class="step-panel">
+
+            <!-- استپ ۷: اطلاعات تکمیلی فرزند -->
+            <div v-if="currentStep === 6 && form.product_kind === 'child'" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <h5>اطلاعات تکمیلی نوع</h5>
+                  <hr />
+                </div>
+
+                <!-- توضیحات اختصاصی -->
+                <div class="col-12 mb-3">
+                  <label class="form-label">توضیحات مختص این نوع</label>
+                  <Editor v-model="form.child_description" />
+                </div>
+
+                <!-- متا تگ‌های اختصاصی -->
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">عنوان متا (مختص این نوع)</label>
+                  <input v-model="form.child_meta_title" type="text" class="form-control" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">توضیحات متا (مختص این نوع)</label>
+                  <textarea v-model="form.child_meta_description" class="form-control" rows="2"></textarea>
+                </div>
+
+
+
+                <!-- فیلدهای اختصاصی بر اساس نوع -->
+                <div class="col-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h6>فیلدهای اختصاصی</h6>
+                    </div>
+                    <div class="card-body">
+                      <!-- آنلاین -->
+                      <div v-if="form.child_type === 'online'" class="row">
+                        <div class="col-12 mb-3">
+                          <label class="form-label">لینک جلسه آنلاین</label>
+                          <input v-model="form.meeting_link" type="text" class="form-control"
+                            placeholder="https://zoom.us/..." />
+                          <small class="text-muted">لینک جلسه آنلاین (زوم، تیمز، گوگل میت و ...)</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تاریخ شروع</label>
+                          <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
+                            v-model="form.start_date"></date-picker>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تاریخ پایان</label>
+                          <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
+                            v-model="form.end_date"></date-picker>
+
+                        </div>
+                      </div>
+
+                      <!-- حضوری -->
+                      <div v-if="form.child_type === 'in_person'" class="row">
+                        <div class="col-12 mb-3">
+                          <label class="form-label">مکان برگزاری</label>
+                          <input v-model="form.location" type="text" class="form-control" placeholder="آدرس کامل" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">ظرفیت شرکت‌کنندگان</label>
+                          <input v-model.number="form.max_attendees" type="number" class="form-control" min="1" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تعداد فروش/ثبت‌نام</label>
+                          <input v-model.number="form.sold_count" type="number" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تاریخ شروع</label>
+                          <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
+                            v-model="form.start_date"></date-picker>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تاریخ پایان</label>
+                          <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
+                            v-model="form.end_date"></date-picker>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <label class="form-label">مهلت ثبت‌نام</label>
+                          <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
+                            v-model="form.registration_deadline"></date-picker>
+                        </div>
+                      </div>
+
+                      <!-- ضبط شده -->
+                      <div v-if="form.child_type === 'recorded'" class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">موجودی</label>
+                          <input v-model.number="form.stock" type="number" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">تعداد فروش</label>
+                          <input v-model.number="form.sold_count" type="number" class="form-control" min="0" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- استپ ۸: فایل‌های محصول -->
+            <div v-if="currentStep === 7" class="step-panel">
               <div class="row">
                 <div class="col-12 mb-3">
                   <h5>فایل‌های محصول</h5>
@@ -188,7 +361,6 @@
                   <hr />
                 </div>
 
-                <!-- لیست فایل‌های اضافه شده -->
                 <div class="col-12" v-if="productFiles.length > 0">
                   <div class="table-responsive">
                     <table class="table table-bordered">
@@ -226,7 +398,6 @@
                   </div>
                 </div>
 
-                <!-- افزودن فایل جدید -->
                 <div class="col-12">
                   <div class="border p-3 rounded">
                     <h6>افزودن فایل جدید</h6>
@@ -283,7 +454,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { toast } from 'vue3-toastify';
 import { useRouter } from 'vue-router';
@@ -306,18 +477,19 @@ const steps = ref([
   { label: 'ویدیو', icon: 'bi-play-circle' },
   { label: 'دسته‌بندی', icon: 'bi-tags' },
   { label: 'ویژگی‌ها', icon: 'bi-list-ul' },
-  { label: 'فایل‌ها', icon: 'bi-file-earmark' } // استپ جدید
+  { label: 'اطلاعات تکمیلی', icon: 'bi-gear' },
+  { label: 'فایل‌ها', icon: 'bi-file-earmark' }
 ]);
 
 const productTypes = ref([]);
 const categoryOptions = ref([]);
 const attributes = ref([]);
+const parentProducts = ref([]);
 const errors = ref({});
 const uploadedImages = ref([]);
 const uploadedVideo = ref(null);
 const productFiles = ref([]);
 
-// فرم فایل جدید
 const newFile = ref({
   title: '',
   path: '',
@@ -329,17 +501,43 @@ const form = ref({
   title: '',
   description: '',
   status: 'draft',
+  product_kind: 'simple',
+  parent_id: null,
+  child_type: null,
   price: 0,
   discount_value: null,
   discount_type: null,
   is_free: false,
+  child_price: null,
+  child_discount_price: null,
+  child_description: '',
+  child_meta_title: '',
+  child_meta_description: '',
+  child_thumbnail: '',
+  is_child_free: false,
+  child_discount_value: null,
+  child_discount_type: null,
+  child_coupon_code: '',
+  meeting_link: '',
+  location: '',
+  max_attendees: null,
+  stock: null,
+  sold_count: 0,
+  start_date: null,
+  end_date: null,
+  registration_deadline: null,
+  is_variation_active: true,
+  show_in_front: true,
+  sort_order: 0,
+  display_order: 0,
+  sku: '',
   meta_title: '',
   meta_description: '',
   categories: [],
   attributes: {},
   images: [],
   video: null,
-  product_files: [] // فایل‌های محصول
+  product_files: []
 });
 
 const normalizer = node => ({ id: node.id, label: node.title, children: node.all_children });
@@ -361,14 +559,6 @@ const finalPrice = computed(() => {
 function numberFormat(value) {
   if (!value && value !== 0) return '۰';
   return new Intl.NumberFormat('fa-IR').format(value);
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function goToStep(index) {
@@ -393,6 +583,16 @@ function cancelForm() {
   router.push('/products');
 }
 
+function onProductKindChange() {
+  // اگر نوع محصول تغییر کرد، تنظیمات مربوطه رو ریست کن
+  if (form.value.product_kind !== 'child') {
+    form.value.parent_id = null;
+    form.value.child_type = null;
+    form.value.child_price = null;
+    form.value.child_discount_price = null;
+  }
+}
+
 async function loadProductTypes() {
   try {
     const { data } = await axios.get('/product-types');
@@ -406,6 +606,17 @@ async function loadCategories() {
   try {
     const { data } = await axios.get('/categories');
     categoryOptions.value = data.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function loadParentProducts() {
+  try {
+    const { data } = await axios.get('/products', {
+      params: { product_kind: 'parent' }
+    });
+    parentProducts.value = data.data.data;
   } catch (err) {
     console.error(err);
   }
@@ -458,19 +669,6 @@ function videoLoaded(files) {
   reader.readAsDataURL(file);
 }
 
-// مدیریت فایل‌های محصول
-function handleFileSelect(event) {
-  const file = event.target.files[0];
-  if (file) {
-    newFile.value.file = file;
-    // اگر عنوان وارد نشده، از نام فایل استفاده کن
-    if (!newFile.value.title) {
-      newFile.value.title = file.name.replace(/\.[^/.]+$/, '');
-    }
-  }
-}
-
-
 function addProductFile() {
   if (!newFile.value.path) {
     toast.warning('لطفا آدرس فایل را وارد کنید');
@@ -480,12 +678,11 @@ function addProductFile() {
   productFiles.value.push({
     title: newFile.value.title || newFile.value.path.split('/').pop() || 'فایل بدون عنوان',
     description: '',
-    path: newFile.value.path, // فقط آدرس
+    path: newFile.value.path,
     is_free: newFile.value.is_free,
     sort_order: productFiles.value.length
   });
 
-  // reset
   newFile.value = {
     title: '',
     path: '',
@@ -494,10 +691,10 @@ function addProductFile() {
 
   toast.success('فایل اضافه شد');
 }
+
 function removeProductFile(index) {
   productFiles.value.splice(index, 1);
 }
-
 
 async function submitForm() {
   errors.value = {};
@@ -511,12 +708,46 @@ async function submitForm() {
     formData.append('title', form.value.title);
     formData.append('description', form.value.description || '');
     formData.append('status', form.value.status);
+    formData.append('product_kind', form.value.product_kind);
+    formData.append('parent_id', form.value.parent_id || '');
+    formData.append('child_type', form.value.child_type || '');
+    formData.append('meta_title', form.value.meta_title || '');
+    formData.append('meta_description', form.value.meta_description || '');
+
+    // قیمت
     formData.append('price', form.value.price || 0);
     formData.append('discount_value', form.value.discount_value || '');
     formData.append('discount_type', form.value.discount_type || '');
     formData.append('is_free', form.value.is_free ? 1 : 0);
-    formData.append('meta_title', form.value.meta_title || '');
-    formData.append('meta_description', form.value.meta_description || '');
+
+    // قیمت فرزند
+    formData.append('child_price', form.value.child_price || '');
+    formData.append('child_discount_price', form.value.child_discount_price || '');
+    formData.append('is_child_free', form.value.is_child_free ? 1 : 0);
+    formData.append('child_discount_value', form.value.child_discount_value || '');
+    formData.append('child_discount_type', form.value.child_discount_type || '');
+    formData.append('child_coupon_code', form.value.child_coupon_code || '');
+
+    // اطلاعات تکمیلی فرزند
+    formData.append('child_description', form.value.child_description || '');
+    formData.append('child_meta_title', form.value.child_meta_title || '');
+    formData.append('child_meta_description', form.value.child_meta_description || '');
+    formData.append('child_thumbnail', form.value.child_thumbnail || '');
+
+    // فیلدهای اختصاصی
+    formData.append('meeting_link', form.value.meeting_link || '');
+    formData.append('location', form.value.location || '');
+    formData.append('max_attendees', form.value.max_attendees || '');
+    formData.append('stock', form.value.stock || '');
+    formData.append('sold_count', form.value.sold_count || 0);
+    formData.append('start_date', form.value.start_date || '');
+    formData.append('end_date', form.value.end_date || '');
+    formData.append('registration_deadline', form.value.registration_deadline || '');
+    formData.append('is_variation_active', form.value.is_variation_active ? 1 : 0);
+    formData.append('show_in_front', form.value.show_in_front ? 1 : 0);
+    formData.append('sort_order', form.value.sort_order || 0);
+    formData.append('display_order', form.value.display_order || 0);
+    formData.append('sku', form.value.sku || '');
 
     // دسته‌بندی‌ها
     formData.append('categories', JSON.stringify(form.value.categories));
@@ -536,7 +767,7 @@ async function submitForm() {
       formData.append('video', form.value.video);
     }
 
-    // فایل‌های محصول - فقط آدرس
+    // فایل‌ها
     if (productFiles.value.length > 0) {
       for (const [index, file] of productFiles.value.entries()) {
         formData.append(`product_files[${index}][title]`, file.title || '');
@@ -556,16 +787,20 @@ async function submitForm() {
   } catch (e) {
     if (e.response?.data?.errors) {
       errors.value = e.response.data.errors;
-      if (errors.value.title || errors.value.product_type_id) {
+      if (errors.value.title || errors.value.product_type_id || errors.value.product_kind || errors.value.parent_id || errors.value.child_type) {
         currentStep.value = 0;
-      } else if (errors.value.price) {
+      } else if (errors.value.price || errors.value.child_price || errors.value.child_discount_price) {
         currentStep.value = 1;
       } else if (errors.value.images) {
         currentStep.value = 2;
       } else if (errors.value.categories) {
         currentStep.value = 4;
-      } else if (errors.value.product_files) {
+      } else if (errors.value.attributes) {
+        currentStep.value = 5;
+      } else if (errors.value.child_description || errors.value.meeting_link || errors.value.location || errors.value.max_attendees) {
         currentStep.value = 6;
+      } else if (errors.value.product_files) {
+        currentStep.value = 7;
       }
     }
     toast.error('خطا در ذخیره محصول');
@@ -577,6 +812,7 @@ async function submitForm() {
 onMounted(() => {
   loadProductTypes();
   loadCategories();
+  loadParentProducts();
 });
 </script>
 
@@ -622,7 +858,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
   transition: all 0.3s;
 }
 

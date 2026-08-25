@@ -366,15 +366,11 @@ const routes = [
   },
   //
 
+
   {
-    path: "/comments/products",
-    name: "comments-products",
-    component: () => import("@/views/comments/Products.vue"),
-  },
-  {
-    path: "/comments/articles",
-    name: "comments-articles",
-    component: () => import("@/views/comments/Articles.vue"),
+    path: "/comments",
+    name: "comments",
+    component: () => import("@/views/comments/list.vue"),
   },
   {
     path: "/location/provinces/list",
