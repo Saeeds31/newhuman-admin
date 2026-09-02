@@ -178,9 +178,13 @@ async function convertToSelectableProduct(productList) {
 
     let finalList = [];
     productList.forEach(product => {
+        let title = product.title;
+        if (product.parent) {
+            title += ` ${product.parent.title}`
+        }
         let obj = {};
         obj.id = product.id;
-        obj.title = product.title + " " + product.parent?.title || " ";
+        obj.title = title;
         obj.price = product.price;
         obj.product_id = product.id;
         finalList.push(obj);
