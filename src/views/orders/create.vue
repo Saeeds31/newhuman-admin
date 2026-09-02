@@ -25,12 +25,7 @@
                             </template>
                         </multiselect>
                     </div>
-                    <!-- انتخاب آدرس -->
-                    <div class="col-12" v-if="addresses.length">
-                        <label class="form-label">آدرس</label>
-                        <Treeselect v-model="selectedAddress" :multiple="false" :options="addresses"
-                            placeholder="انتخاب آدرس..." />
-                    </div>
+
 
                     <!-- افزودن محصول -->
                     <div class="col-12">
@@ -48,9 +43,8 @@
                                     <span v-else v-text="'موردی یافت نشد'"></span>
                                 </template>
                             </multiselect>
-                            <input v-model.number="selectedQuantity" type="number" min="1" class="form-control "
-                                placeholder="تعداد" />
-                            <button type="button" class="btn btn-success " @click="addProduct">افزودن</button>
+                            <button v-if="!form.items.length" type="button" class="btn btn-success "
+                                @click="addProduct">افزودن</button>
                         </div>
                     </div>
 
@@ -70,13 +64,7 @@
                         </ul>
                     </div>
 
-                    <!-- روش حمل و نقل -->
-                    <div v-if="form.items.length" class="col-12">
-                        <label class="form-label">روش حمل و نقل</label>
-                        <Treeselect :normalizer="shippingNormalizer" v-if="shippings.length" :valueFormat="'object'"
-                            v-model="form.shipping_method" :multiple="false" :options="shippings"
-                            placeholder="انتخاب روش حمل..." />
-                    </div>
+
                 </form>
             </div>
 
@@ -95,7 +83,6 @@
                         <p v-if="wallet">موجودی کیف پول: <strong>{{ wallet.balance.toLocaleString() }} تومان</strong>
                         </p>
                         <p>جمع محصولات: <strong>{{ subtotal.toLocaleString() }} تومان</strong></p>
-                        <p>هزینه حمل: <strong>{{ shippingCost.toLocaleString() }} تومان</strong></p>
                         <p>تخفیف: <input type="number" class="form-control" v-model="discount_amount"></p>
 
                         <hr />
@@ -124,8 +111,6 @@ const store = useAdmin();
 const checkPermission = store.checkPermission;
 const form = ref({
     user_id: null,
-    address_id: null,
-    shipping_method: null,
     items: []
 })
 let sumQuantity = computed(() => {
@@ -140,39 +125,20 @@ let subTotal = computed(() => {
 })
 
 let discount_amount = ref(0);
-let selectedAddress = ref(null);
-const addresses = ref([])
 const selectedProduct = ref(null)
 const selectedQuantity = ref(1)
-const shippingCost = ref(0)
 const loading = ref(false)
 let userOptions = ref([]);
 let productOptions = ref([]);
-let shippings = ref([]);
 let selectedUser = ref(null);
 let wallet = ref(null);
-watch(() => selectedUser.value, (newUser) => {
-    if (newUser) {
-        fetchAddresses(newUser.addresses);
-        wallet.value = newUser.wallet;
-    } else {
-        addresses.value = [];
-        wallet.value = null;
-    }
-})
-watch(() => selectedAddress.value, (newAddress) => {
-    if (newAddress) {
-        showAvalibleShipping()
-    } else {
-        shippings.value = [];
-    }
-})
+
 // محصولات انتخاب شده → محاسبه جمع
 const subtotal = computed(() =>
     form.value.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 )
 
-const total = computed(() => subtotal.value + shippingCost.value - discount_amount.value)
+const total = computed(() => subtotal.value - discount_amount.value)
 let abortController = null;
 // لود کاربران
 const loadUsers = async (search) => {
@@ -187,31 +153,11 @@ const loadUsers = async (search) => {
         signal: abortController.signal,
 
     })
-    userOptions.value = data.data.map(u => ({ id: u.id, label: u.full_name, addresses: u.addresses, wallet: u.wallet }));
-}
-async function showAvalibleShipping() {
-    shippings.value = [];
-    form.value.shipping_method = null;
-    const { data } = await axios.get(`shippings/avalible-shipping`, {
-        params: {
-            addressId: selectedAddress.value,
-            subTotal: subTotal.value,
-            quantity: sumQuantity.value,
-        }
-    });
-    shippings.value = data.data
-}
-// گرفتن آدرس‌های کاربر انتخاب شده
-const fetchAddresses = async (asses) => {
-    addresses.value = asses.map(a => ({ id: a.id, label: `${a.receiver_name} - ${a.address_line} - ${a.phone} ` }))
+    userOptions.value = data.data.map(u => ({ id: u.id, label: u.full_name, wallet: u.wallet }));
 }
 
-const shippingNormalizer = (node) => {
-    return {
-        id: node.method_id,
-        label: node.shipping_method,
-    }
-}
+
+
 let abortController1 = null;
 
 const loadProducts = async (search) => {
@@ -224,35 +170,22 @@ const loadProducts = async (search) => {
         params: { search },
         signal: abortController1.signal,
     })
-    productOptions.value = await convertToSelectableProduct(data.data);
+    productOptions.value = await convertToSelectableProduct(data.data.data);
 }
 
 async function convertToSelectableProduct(productList) {
+    console.log(productList);
+
     let finalList = [];
     productList.forEach(product => {
-        // اگر بیشتر از یک تنوع پایه داشته باشه
-        if (product.variants.length > 1) {
-            product.variants.forEach((variant) => {
-                let obj = {
-                    id: variant.id,
-                    product_id: product.id,
-                    price: variant.price,
-                    title: `${variant.id} - ${product.title} || ${variant.values.map((att) => { return att.value }).join("-")} || موجودی :${variant.stock}`,
-                    isDisabled: variant.stock > 0 ? false : true
-                }
-                finalList.push(obj);
-            });
-        } else {
-            let obj = {};
-            obj.isDisabled = product.variants[0].stock > 0 ? false : true;
-            obj.id = product.variants[0].id;
-            obj.title = product.variants[0].id + " - " + product.title;
-            obj.price = product.price;
-            obj.product_id = product.id;
-            finalList.push(obj);
-        }
-    });
+        let obj = {};
+        obj.id = product.id;
+        obj.title = product.title + " " + product.parent?.title || " ";
+        obj.price = product.price;
+        obj.product_id = product.id;
+        finalList.push(obj);
 
+    })
     return finalList;
 }
 // افزودن محصول به سفارش
@@ -274,23 +207,16 @@ const addProduct = () => {
         })
     }
     selectedQuantity.value = 1;
-    showAvalibleShipping()
 }
 
 // حذف محصول
 const removeProduct = (index) => {
     form.value.items.splice(index, 1)
 }
-// وقتی روش حمل انتخاب شد → هزینه اضافه شود
-watch(() => form.value.shipping_method, async (val) => {
-    if (!val || !selectedAddress.value) {
-        return
-    }
-    shippingCost.value = val.cost
-})
+
 // ثبت سفارش
 const submitOrder = async () => {
-    if (!selectedUser.value || !selectedAddress.value || !form.value.items.length || !form.value.shipping_method) {
+    if (!selectedUser.value || !form.value.items.length) {
         return toast.error('لطفاً همه فیلدها را پر کنید')
     }
     loading.value = true;
@@ -309,23 +235,15 @@ const submitOrder = async () => {
     try {
         let formData = new FormData();
         formData.append("user_id", selectedUser.value.id)
-        formData.append("address_id", selectedAddress.value)
-        formData.append("shipping_method_id", form.value.shipping_method?.method_id)
         formData.append("subtotal", subtotal.value)
         formData.append("discount_amount", discount_amount.value)
-        formData.append("shipping_cost", shippingCost.value)
         formData.append("total", total.value)
         form.value.items.forEach((item, index) => {
-            formData.append(`items[${index}][product_id]`, item.product_id);
-            formData.append(`items[${index}][product_variant_id]`, item.id);
-            formData.append(`items[${index}][quantity]`, item.quantity);
-            formData.append(`items[${index}][price]`, item.price);
+            formData.append(`product_id`, item.product_id);
         })
         await axios.post('/orders-create-by-admin', formData)
         toast.success('سفارش با موفقیت ثبت شد')
-        form.value = { user_id: null, address_id: null, shipping_method: null, items: [] }
-        addresses.value = []
-        shippingCost.value = 0;
+        form.value = { user_id: null, items: [] }
         wallet.value = null;
         selectedUser.value = null;
     } catch (e) {

@@ -365,6 +365,18 @@ const routes = [
     component: () => import("@/views/shop/Shipping/edit.vue"),
   },
   //
+  {
+    path: "/certificates",
+    name: "certificates-list",
+    component: () => import("@/views/certificates/list.vue"),
+  },
+
+  {
+    path: "/certificates/create",
+    name: "certificates-create",
+    component: () => import("@/views/certificates/create.vue"),
+  },
+
 
 
   {

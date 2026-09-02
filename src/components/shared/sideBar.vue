@@ -236,6 +236,13 @@ const menuItems = ref([
       },
     ],
   },
+
+  {
+    name: "گواهینامه ها",
+    permissions: ['certificate_view'],
+    icon: "bi-files",
+    link: "/certificates",
+  },
   {
     name: "گزارشات",
     permissions: ['report_users', 'report_orders', 'report_products'],
@@ -304,7 +311,7 @@ const menuItems = ref([
     permissions: ['comment_products', 'comment_blogs'],
     icon: "bi-chat-dots",
     children: [
-     
+
       {
         name: "کامنت",
         permissions: ['comment_blogs'],
