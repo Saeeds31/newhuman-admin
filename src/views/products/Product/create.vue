@@ -105,7 +105,6 @@
 
             <!-- استپ ۲: قیمت و تخفیف -->
             <div v-if="currentStep === 1" class="step-panel">
-              <!-- قیمت برای محصول ساده -->
               <div v-if="form.product_kind === 'simple'" class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label">قیمت (تومان)</label>
@@ -140,7 +139,6 @@
                 </div>
               </div>
 
-              <!-- قیمت برای محصول فرزند -->
               <div v-if="form.product_kind === 'child'" class="row">
                 <div class="col-md-6 mb-3">
                   <label class="form-label">قیمت (تومان) <span class="text-danger">*</span></label>
@@ -163,7 +161,6 @@
                 </div>
               </div>
 
-              <!-- محصول والد -->
               <div v-if="form.product_kind === 'parent'" class="alert alert-info">
                 <i class="bi bi-info-circle"></i>
                 محصول والد قیمتی ندارد. قیمت‌ها در محصولات فرزند تعیین می‌شوند.
@@ -257,13 +254,11 @@
                   <hr />
                 </div>
 
-                <!-- توضیحات اختصاصی -->
                 <div class="col-12 mb-3">
                   <label class="form-label">توضیحات مختص این نوع</label>
                   <Editor v-model="form.child_description" />
                 </div>
 
-                <!-- متا تگ‌های اختصاصی -->
                 <div class="col-md-6 mb-3">
                   <label class="form-label">عنوان متا (مختص این نوع)</label>
                   <input v-model="form.child_meta_title" type="text" class="form-control" />
@@ -274,16 +269,12 @@
                   <textarea v-model="form.child_meta_description" class="form-control" rows="2"></textarea>
                 </div>
 
-
-
-                <!-- فیلدهای اختصاصی بر اساس نوع -->
                 <div class="col-12">
                   <div class="card">
                     <div class="card-header">
                       <h6>فیلدهای اختصاصی</h6>
                     </div>
                     <div class="card-body">
-                      <!-- آنلاین -->
                       <div v-if="form.child_type === 'online'" class="row">
                         <div class="col-12 mb-3">
                           <label class="form-label">لینک جلسه آنلاین</label>
@@ -300,11 +291,9 @@
                           <label class="form-label">تاریخ پایان</label>
                           <date-picker display-format="jYYYY/jMM/jDD" format="YYYY-MM-DD"
                             v-model="form.end_date"></date-picker>
-
                         </div>
                       </div>
 
-                      <!-- حضوری -->
                       <div v-if="form.child_type === 'in_person'" class="row">
                         <div class="col-12 mb-3">
                           <label class="form-label">مکان برگزاری</label>
@@ -335,7 +324,6 @@
                         </div>
                       </div>
 
-                      <!-- ضبط شده -->
                       <div v-if="form.child_type === 'recorded'" class="row">
                         <div class="col-md-12 mb-3">
                           <label class="form-label">موجودی</label>
@@ -348,8 +336,87 @@
               </div>
             </div>
 
-            <!-- استپ ۸: فایل‌های محصول -->
+            <!-- استپ ۸: سوالات متداول -->
             <div v-if="currentStep === 7" class="step-panel">
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <h5>سوالات متداول</h5>
+                  <p class="text-muted">سوالات و پاسخ‌های متداول این محصول را وارد کنید</p>
+                  <hr />
+                </div>
+
+                <!-- فرم ایجاد سوال جدید -->
+                <div class="col-12 mb-4">
+                  <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                      <h6 class="mb-0"><i class="bi bi-plus-circle"></i> افزودن سوال جدید</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-12 mb-3">
+                          <label class="form-label">سوال <span class="text-danger">*</span></label>
+                          <input v-model="newFaq.question" type="text" class="form-control"
+                            placeholder="متن سوال را وارد کنید..." @keyup.enter="addFaqToProduct" />
+                          <span v-if="newFaqErrors.question" class="text-danger">{{ newFaqErrors.question[0] }}</span>
+                        </div>
+                        <div class="col-12 mb-3">
+                          <label class="form-label">پاسخ <span class="text-danger">*</span></label>
+                          <textarea v-model="newFaq.answer" class="form-control" rows="3"
+                            placeholder="متن پاسخ را وارد کنید..."></textarea>
+                          <span v-if="newFaqErrors.answer" class="text-danger">{{ newFaqErrors.answer[0] }}</span>
+                        </div>
+                        <div class="col-12">
+                          <button class="btn btn-success" type="button" @click="addFaqToProduct">
+                            <i class="bi bi-plus"></i> افزودن به لیست
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- لیست سوالات اضافه شده -->
+                <div class="col-12">
+                  <div v-if="selectedFaqs.length === 0" class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    هنوز سوالی اضافه نشده است.
+                  </div>
+
+                  <div v-else class="faq-list">
+                    <div v-for="(faq, index) in selectedFaqs" :key="index" class="faq-item card mb-2">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                          <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                              <span class="badge bg-secondary me-2">{{ index + 1 }}</span>
+                              <strong>{{ faq.question }}</strong>
+                            </div>
+                            <p class="text-muted mb-0 small">{{ faq.answer }}</p>
+                          </div>
+                          <div class="btn-group-vertical btn-group-sm ms-2">
+                            <button class="btn btn-outline-secondary" type="button" @click="moveFaqUp(index)"
+                              :disabled="index === 0" title="بالا">
+                              <i class="bi bi-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" @click="moveFaqDown(index)"
+                              :disabled="index === selectedFaqs.length - 1" title="پایین">
+                              <i class="bi bi-arrow-down"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" @click="removeFaqFromProduct(index)"
+                              title="حذف">
+                              <i class="bi bi-trash3"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- استپ ۹: فایل‌های محصول -->
+            <div v-if="currentStep === 8" class="step-panel">
               <div class="row">
                 <div class="col-12 mb-3">
                   <h5>فایل‌های محصول</h5>
@@ -450,7 +517,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { toast } from 'vue3-toastify';
 import { useRouter } from 'vue-router';
@@ -474,6 +541,7 @@ const steps = ref([
   { label: 'دسته‌بندی', icon: 'bi-tags' },
   { label: 'ویژگی‌ها', icon: 'bi-list-ul' },
   { label: 'اطلاعات تکمیلی', icon: 'bi-gear' },
+  { label: 'سوالات متداول', icon: 'bi-question-circle' },
   { label: 'فایل‌ها', icon: 'bi-file-earmark' }
 ]);
 
@@ -485,6 +553,14 @@ const errors = ref({});
 const uploadedImages = ref([]);
 const uploadedVideo = ref(null);
 const productFiles = ref([]);
+
+// ========== FAQ ==========
+const selectedFaqs = ref([]);
+const newFaq = ref({
+  question: '',
+  answer: '',
+});
+const newFaqErrors = ref({});
 
 const newFile = ref({
   title: '',
@@ -580,7 +656,6 @@ function cancelForm() {
 }
 
 function onProductKindChange() {
-  // اگر نوع محصول تغییر کرد، تنظیمات مربوطه رو ریست کن
   if (form.value.product_kind !== 'child') {
     form.value.parent_id = null;
     form.value.child_type = null;
@@ -636,6 +711,60 @@ async function loadAttributes() {
   }
 }
 
+// ========== FAQ Methods ==========
+function addFaqToProduct() {
+  newFaqErrors.value = {};
+
+  // ولیدیشن سمت کلاینت
+  if (!newFaq.value.question || !newFaq.value.question.trim()) {
+    newFaqErrors.value.question = ['متن سوال الزامی است'];
+    return;
+  }
+  if (!newFaq.value.answer || !newFaq.value.answer.trim()) {
+    newFaqErrors.value.answer = ['متن پاسخ الزامی است'];
+    return;
+  }
+
+  // بررسی تکراری نبودن سوال
+  if (selectedFaqs.value.some(f => f.question.trim() === newFaq.value.question.trim())) {
+    toast.warning('این سوال قبلاً اضافه شده است');
+    return;
+  }
+
+  selectedFaqs.value.push({
+    question: newFaq.value.question.trim(),
+    answer: newFaq.value.answer.trim(),
+    sort_order: selectedFaqs.value.length,
+  });
+
+  // ریست فرم
+  newFaq.value = { question: '', answer: '' };
+
+  toast.success('سوال به لیست اضافه شد');
+}
+
+function removeFaqFromProduct(index) {
+  selectedFaqs.value.splice(index, 1);
+  selectedFaqs.value.forEach((f, i) => f.sort_order = i);
+}
+
+function moveFaqUp(index) {
+  if (index === 0) return;
+  const temp = selectedFaqs.value[index - 1];
+  selectedFaqs.value[index - 1] = selectedFaqs.value[index];
+  selectedFaqs.value[index] = temp;
+  selectedFaqs.value.forEach((f, i) => f.sort_order = i);
+}
+
+function moveFaqDown(index) {
+  if (index === selectedFaqs.value.length - 1) return;
+  const temp = selectedFaqs.value[index + 1];
+  selectedFaqs.value[index + 1] = selectedFaqs.value[index];
+  selectedFaqs.value[index] = temp;
+  selectedFaqs.value.forEach((f, i) => f.sort_order = i);
+}
+
+// ========== Images / Video / Files ==========
 function imagesLoaded(files) {
   for (const file of files) {
     const reader = new FileReader();
@@ -692,6 +821,7 @@ function removeProductFile(index) {
   productFiles.value.splice(index, 1);
 }
 
+// ========== Submit ==========
 async function submitForm() {
   errors.value = {};
   loading.value = true;
@@ -751,6 +881,15 @@ async function submitForm() {
     // ویژگی‌ها
     formData.append('attributes', JSON.stringify(form.value.attributes));
 
+    // ========== سوالات متداول (ساخت + انتساب در یک درخواست) ==========
+    if (selectedFaqs.value.length > 0) {
+      selectedFaqs.value.forEach((faq, index) => {
+        formData.append(`faqs[${index}][question]`, faq.question);
+        formData.append(`faqs[${index}][answer]`, faq.answer);
+        formData.append(`faqs[${index}][sort_order]`, faq.sort_order ?? index);
+      });
+    }
+
     // تصاویر
     if (uploadedImages.value.length > 0) {
       for (const img of uploadedImages.value) {
@@ -795,8 +934,10 @@ async function submitForm() {
         currentStep.value = 5;
       } else if (errors.value.child_description || errors.value.meeting_link || errors.value.location || errors.value.max_attendees) {
         currentStep.value = 6;
-      } else if (errors.value.product_files) {
+      } else if (Object.keys(errors.value).some(k => k.startsWith('faqs'))) {
         currentStep.value = 7;
+      } else if (errors.value.product_files) {
+        currentStep.value = 8;
       }
     }
     toast.error('خطا در ذخیره محصول');
@@ -910,6 +1051,21 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.faq-list .faq-item {
+  border: 1px solid #e9ecef;
+  transition: all 0.2s;
+}
+
+.faq-list .faq-item:hover {
+  border-color: #0d6efd;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+}
+
+.faq-list .btn-group-vertical .btn {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 @media (max-width: 768px) {

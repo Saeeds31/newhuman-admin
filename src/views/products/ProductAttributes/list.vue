@@ -1,52 +1,113 @@
 <template>
-  <div class="container mt-4" v-if="checkPermission(['productattribute_view'])">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h3><i class="bi bi-list-ul"></i> مدیریت ویژگی‌ها</h3>
-        <button class="btn btn-success" @click="showCreateModal = true" v-if="checkPermission(['productattribute_store'])">
-          <i class="bi bi-plus"></i> افزودن ویژگی
-        </button>
+  <div class="container mt-3 mt-md-4 px-2 px-md-3" v-if="checkPermission(['productattribute_view'])">
+    <div class="card header-card">
+      <div class="card-header">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+          <h3 class="mb-0 page-title">
+            <i class="bi bi-list-ul"></i>
+            <span>مدیریت ویژگی‌ها</span>
+          </h3>
+          <button class="btn btn-success add-btn" @click="showCreateModal = true" v-if="checkPermission(['productattribute_store'])">
+            <i class="bi bi-plus"></i>
+            <span>افزودن ویژگی</span>
+          </button>
+        </div>
       </div>
-      <div class="card-body">
+      <div class="card-body p-2 p-md-3">
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border text-primary"></div>
         </div>
 
         <div v-else>
-          <table class="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <th>شناسه</th>
-                <th>نام ویژگی</th>
-                <th>slug</th>
-                <th>نوع محصول</th>
-                <th>اجباری</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in items.data" :key="item.id">
-                <td>{{ item.id }}</td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.slug }}</td>
-                <td>{{ item.product_type?.name }}</td>
-                <td>
-                  <span :class="item.is_required ? 'badge bg-warning' : 'badge bg-secondary'">
-                    {{ item.is_required ? 'اجباری' : 'اختیاری' }}
-                  </span>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-warning me-2" @click="editItem(item)" v-if="checkPermission(['productattribute_update'])">
-                    <i class="bi bi-pen"></i>
-                  </button>
-                  <button class="btn btn-sm btn-danger" @click="deleteItem(item.id)" v-if="checkPermission(['productattribute_delete'])">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- ===== نمایش جدول در دسکتاپ ===== -->
+          <div class="table-responsive d-none d-md-block">
+            <table class="table table-bordered table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>شناسه</th>
+                  <th>نام ویژگی</th>
+                  <th>slug</th>
+                  <th>نوع محصول</th>
+                  <th>اجباری</th>
+                  <th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in items.data" :key="item.id">
+                  <td>{{ item.id }}</td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.slug }}</td>
+                  <td>{{ item.product_type?.name }}</td>
+                  <td>
+                    <span :class="item.is_required ? 'badge bg-warning' : 'badge bg-secondary'">
+                      {{ item.is_required ? 'اجباری' : 'اختیاری' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="d-flex flex-wrap gap-1">
+                      <button class="btn btn-sm btn-warning" @click="editItem(item)" v-if="checkPermission(['productattribute_update'])">
+                        <i class="bi bi-pen"></i>
+                        <span>ویرایش</span>
+                      </button>
+                      <button class="btn btn-sm btn-danger" @click="deleteItem(item.id)" v-if="checkPermission(['productattribute_delete'])">
+                        <i class="bi bi-trash3"></i>
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
+          <!-- ===== نمایش کارتی در موبایل ===== -->
+          <div class="d-md-none attribute-cards">
+            <div
+              v-for="item in items.data"
+              :key="item.id"
+              class="attribute-card"
+            >
+              <div class="attribute-card-header">
+                <div class="attribute-id-badge">#{{ item.id }}</div>
+                <div class="attribute-name">{{ item.name }}</div>
+                <span :class="item.is_required ? 'badge bg-warning' : 'badge bg-secondary'">
+                  {{ item.is_required ? 'اجباری' : 'اختیاری' }}
+                </span>
+              </div>
+
+              <div class="attribute-card-body">
+                <div class="attribute-info-row">
+                  <i class="bi bi-link-45deg"></i>
+                  <span class="info-label">slug:</span>
+                  <span class="info-value">{{ item.slug }}</span>
+                </div>
+                <div class="attribute-info-row">
+                  <i class="bi bi-tag"></i>
+                  <span class="info-label">نوع محصول:</span>
+                  <span class="info-value">{{ item.product_type?.name ?? '-' }}</span>
+                </div>
+              </div>
+
+              <div class="attribute-card-actions">
+                <button class="btn btn-sm btn-warning flex-fill" @click="editItem(item)" v-if="checkPermission(['productattribute_update'])">
+                  <i class="bi bi-pen"></i>
+                  <span>ویرایش</span>
+                </button>
+                <button class="btn btn-sm btn-danger flex-fill" @click="deleteItem(item.id)" v-if="checkPermission(['productattribute_delete'])">
+                  <i class="bi bi-trash3"></i>
+                  <span>حذف</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- حالت خالی -->
+            <div v-if="!items.data || items.data.length === 0" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              <p>ویژگی‌ای یافت نشد</p>
+            </div>
+          </div>
+
+          <!-- Pagination -->
           <b-pagination
             v-model="currentPage"
             :total-rows="items.total"
@@ -54,7 +115,7 @@
             :per-page="items.per_page"
             @Update:modelValue="changePage"
             align="center"
-            class="mt-3">
+            class="mt-3 pagination-responsive">
           </b-pagination>
         </div>
       </div>
@@ -62,7 +123,7 @@
 
     <!-- مودال ایجاد/ویرایش ویژگی -->
     <div class="modal" :class="{ 'd-block': showCreateModal || showEditModal }" tabindex="-1">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">{{ showEditModal ? 'ویرایش ویژگی' : 'ایجاد ویژگی جدید' }}</h5>
@@ -240,6 +301,164 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ===== هدر صفحه ===== */
+.header-card .card-header {
+  padding: 16px 20px;
+  background: transparent;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.page-title {
+  font-weight: 700;
+  color: #2d3436;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-btn {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* ===== جدول ===== */
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #2d3436;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.table tbody td {
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+/* ===== کارت‌های موبایل ===== */
+.attribute-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attribute-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.attribute-card:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.attribute-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.attribute-id-badge {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.attribute-name {
+  font-weight: 700;
+  color: #2d3436;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.attribute-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attribute-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.attribute-info-row i {
+  color: #6c5ce7;
+  font-size: 0.95rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.info-label {
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: #2d3436;
+  font-weight: 600;
+  margin-right: auto;
+  word-break: break-word;
+  text-align: left;
+  direction: ltr;
+}
+
+.attribute-card-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.attribute-card-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+.attribute-card-actions .btn span {
+  display: none;
+}
+
+/* ===== Pagination ===== */
+.pagination-responsive {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ===== Modal ===== */
 .modal {
   background: rgba(0,0,0,0.5);
 }
@@ -254,5 +473,69 @@ onMounted(() => {
 }
 .modal {
   z-index: 1050;
+}
+
+/* ========================================= */
+/* ===== موبایل (کمتر از 768px) ===== */
+/* ========================================= */
+@media (max-width: 767.98px) {
+  .header-card .card-header {
+    padding: 12px 14px;
+  }
+
+  .header-card .card-body {
+    padding: 12px 14px;
+  }
+
+  .page-title {
+    font-size: 1.15rem;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .add-btn {
+    width: 100%;
+  }
+
+  /* نمایش label دکمه‌ها در موبایل */
+  .attribute-card-actions .btn span {
+    display: inline;
+  }
+}
+
+/* ========================================= */
+/* ===== موبایل کوچک (کمتر از 400px) ===== */
+/* ========================================= */
+@media (max-width: 399.98px) {
+  .page-title {
+    font-size: 1rem;
+  }
+
+  .attribute-card {
+    padding: 12px;
+  }
+
+  .attribute-name {
+    font-size: 0.9rem;
+  }
+
+  .attribute-info-row {
+    font-size: 0.78rem;
+  }
+
+  .attribute-card-actions .btn {
+    font-size: 0.7rem;
+    padding: 5px 6px;
+  }
+}
+
+/* ========================================= */
+/* ===== دسکتاپ: مخفی کردن کارت‌ها ===== */
+/* ========================================= */
+@media (min-width: 768px) {
+  .attribute-cards {
+    display: none;
+  }
 }
 </style>

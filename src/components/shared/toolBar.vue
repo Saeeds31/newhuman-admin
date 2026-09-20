@@ -1,26 +1,30 @@
 <template>
   <b-navbar id="mainNavbar" variant="light" class="bg-white border-bottom px-3">
-    <b-navbar-brand href="#">Admin Panel</b-navbar-brand>
+    <div class="navbar-wrapper d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between w-100 gap-2">
+      
+      <b-navbar-brand href="#" class="brand-wrapper">پنل مدیریت</b-navbar-brand>
 
-    <b-navbar-nav class=" d-flex align-items-center gap-2">
-      <!-- دکمه‌های اضافی -->
+      <b-navbar-nav class="d-flex align-items-center justify-content-center justify-content-md-end gap-2 action-buttons">
+        <!-- دکمه‌های اضافی -->
 
-      <b-button variant="info" @click="router.go(-1)">
-        <i class="bi-arrow-left"></i>
-      </b-button>
+        <b-button variant="info" @click="router.go(-1)">
+          <i class="bi-arrow-left"></i>
+        </b-button>
 
-      <b-button variant="outline-primary" size="sm" pill class="position-relative" @click="showNotificationModal">
-        <i class="bi bi-bell-fill"></i>
-        <b-badge v-if="unseenCount > 0" class=" bg-primary position-absolute top-0 start-100 translate-middle"
-          style="font-size: 0.65rem; width:24px">
-          {{ unseenCount > 99 ? '99+' : unseenCount }}
-        </b-badge>
+        <b-button variant="outline-primary" size="sm" pill class="position-relative" @click="showNotificationModal">
+          <i class="bi bi-bell-fill"></i>
+          <b-badge v-if="unseenCount > 0" class="bg-primary position-absolute top-0 start-100 translate-middle"
+            style="font-size: 0.65rem; width:24px">
+            {{ unseenCount > 99 ? '99+' : unseenCount }}
+          </b-badge>
 
-      </b-button> <!-- Logout -->
-      <b-button variant="danger" @click="logout">
-        <i class="bi-box-arrow-left"></i>
-      </b-button>
-    </b-navbar-nav>
+        </b-button> <!-- Logout -->
+        <b-button variant="danger" @click="logout">
+          <i class="bi-box-arrow-left"></i>
+        </b-button>
+      </b-navbar-nav>
+
+    </div>
   </b-navbar>
 
   <Modal v-if="modalShow" id="detailModal" @closeModal="() => modalShow = false" title="مشاهده پیام">
@@ -42,21 +46,21 @@
 
           <div v-for="notif in unseenNotifications" :key="notif.id"
             class="notif-item p-3 border-bottom bg-light bg-opacity-75">
-            <div class=" d-flex">
+            <div class="d-flex flex-column flex-sm-row gap-2 gap-sm-0">
               <div class="flex-shrink-0">
                 <div
                   class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
                   <i class="bi bi-bell-fill text-primary"></i>
                 </div>
               </div>
-              <div class="flex-grow-1 ms-3">
+              <div class="flex-grow-1 ms-sm-3">
                 <h6 class="mb-1 fw-bold text-dark">{{ notif.title }}</h6>
                 <p class="mb-1 small text-muted">{{ notif.message }}</p>
                 <small class="text-primary fw-medium">
                   {{ formatJalaliTimeAgo(notif.created_at) }}
                 </small>
               </div>
-              <div class="align-self-center">
+              <div class="align-self-start align-self-sm-center">
                 <button class="badge bg-danger rounded-pill" @click="markAsSeen(notif)">
                   <span>دیده شد</span>
                   <i class="bi-check"></i>
@@ -155,6 +159,74 @@ const logout = () => {
   delete axios.defaults.headers.common.Authorization
   router.push('/login')
 }
-
-
 </script>
+
+<style scoped>
+/* ===== Navbar ===== */
+#mainNavbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+/* ===== آواتار اعلان ===== */
+.avatar-sm {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* ===== آیتم اعلان ===== */
+.notif-item {
+  transition: background 0.15s ease;
+}
+
+.notif-item:hover {
+  background: #f8f9fa !important;
+}
+
+/* ========================================= */
+/* ===== موبایل (کمتر از 768px) ===== */
+/* ========================================= */
+@media (max-width: 767.98px) {
+  /* همه چیز زیر هم */
+  .navbar-wrapper {
+    flex-direction: column !important;
+  }
+
+  /* برند وسط‌چین */
+  .brand-wrapper {
+    text-align: center;
+    width: 100%;
+  }
+
+  /* دکمه‌های عملیات */
+  .action-buttons {
+    width: 100%;
+    justify-content: center !important;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  /* لیست اعلان‌ها */
+  .notification-list {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ========================================= */
+/* ===== اسکرول‌بار سفارشی ===== */
+/* ========================================= */
+.notification-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+</style>

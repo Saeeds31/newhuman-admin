@@ -1,70 +1,114 @@
 <template>
-    <div class="container mt-3 wallets-page" v-if="checkPermission(['wallet_view'])">
-
+    <div class="container mt-3 mt-md-4 px-2 px-md-3 wallets-page" v-if="checkPermission(['wallet_view'])">
 
         <!-- فیلتر -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center mb-3">
-                <h3>
-                    <i class="bi bi-wallet"></i>
-                    <span>مدیریت کیف پول‌ها</span>
-                </h3>
+        <div class="card mb-3 header-card">
+            <div class="card-header">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 mb-3">
+                    <h3 class="mb-0 page-title">
+                        <i class="bi bi-wallet"></i>
+                        <span>مدیریت کیف پول‌ها</span>
+                    </h3>
+                </div>
             </div>
             <div class="card-body">
-                <input v-model="filters.search" @input="getWallets" type="text" class="form-control"
+                <input v-model="filters.search" @input="getWallets" type="text" class="form-control search-input"
                     placeholder="جستجو بر اساس نام کاربر  " />
             </div>
         </div>
 
         <!-- جدول -->
         <div class="card">
-            <div class="card-body">
+            <div class="card-body p-2 p-md-3">
                 <div v-if="loading" class="text-center my-5">
                     <div class="spinner-border" role="status"></div>
                     <p class="mt-2">در حال بارگذاری...</p>
                 </div>
 
                 <div v-else>
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>شناسه</th>
-                                <th>کاربر</th>
-                                <th>موجودی (تومان)</th>
-                                <th>عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="wallet in wallets.data" :key="wallet.id">
-                                <td>{{ wallet.id }}</td>
-                                <td>{{ wallet.user?.full_name ?? '-' }}</td>
-                                <td>{{ Number(wallet.balance).toLocaleString('fa-ir') }}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-success me-2" @click="openModal(wallet, 'deposit')">
-                                        <i class="bi bi-plus"></i>
-                                        افزایش موجودی
-                                    </button>
-                                    <button class="btn btn-sm btn-warning" @click="openModal(wallet, 'withdraw')">
-                                        <i class="bi bi-dash"></i>
-                                        کاهش موجودی
+                    <!-- ===== نمایش جدول در دسکتاپ ===== -->
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-bordered table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>شناسه</th>
+                                    <th>کاربر</th>
+                                    <th>موجودی (تومان)</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="wallet in wallets.data" :key="wallet.id">
+                                    <td>{{ wallet.id }}</td>
+                                    <td>{{ wallet.user?.full_name ?? '-' }}</td>
+                                    <td>{{ Number(wallet.balance).toLocaleString('fa-ir') }}</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button class="btn btn-sm btn-success" @click="openModal(wallet, 'deposit')">
+                                                <i class="bi bi-plus"></i>
+                                                <span>افزایش موجودی</span>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" @click="openModal(wallet, 'withdraw')">
+                                                <i class="bi bi-dash"></i>
+                                                <span>کاهش موجودی</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <!-- ===== نمایش کارتی در موبایل ===== -->
+                    <div class="d-md-none wallet-cards">
+                        <div
+                            v-for="wallet in wallets.data"
+                            :key="wallet.id"
+                            class="wallet-card"
+                        >
+                            <div class="wallet-card-header">
+                                <div class="wallet-id-badge">#{{ wallet.id }}</div>
+                                <div class="wallet-name">{{ wallet.user?.full_name ?? '-' }}</div>
+                            </div>
+
+                            <div class="wallet-card-body">
+                                <div class="wallet-info-row">
+                                    <i class="bi bi-cash-stack"></i>
+                                    <span class="info-label">موجودی:</span>
+                                    <span class="info-value">{{ Number(wallet.balance).toLocaleString('fa-ir') }} تومان</span>
+                                </div>
+                            </div>
+
+                            <div class="wallet-card-actions">
+                                <button class="btn btn-sm btn-success flex-fill" @click="openModal(wallet, 'deposit')">
+                                    <i class="bi bi-plus"></i>
+                                    <span>افزایش</span>
+                                </button>
+                                <button class="btn btn-sm btn-warning flex-fill" @click="openModal(wallet, 'withdraw')">
+                                    <i class="bi bi-dash"></i>
+                                    <span>کاهش</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- حالت خالی -->
+                        <div v-if="!wallets.data || wallets.data.length === 0" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            <p>کیف پولی یافت نشد</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
                     <b-pagination v-model="currentPage" :total-rows="wallets.total" v-if="wallets.last_page != 1"
                         :per-page="wallets.per_page" @Update:modelValue="changePage" align="center"
-                        class="mt-3"></b-pagination>
-
-
+                        class="mt-3 pagination-responsive"></b-pagination>
                 </div>
             </div>
         </div>
 
         <!-- Modal -->
         <div class="modal fade" id="walletModal" tabindex="-1" aria-hidden="true" ref="walletModal">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{ modalTitle }}</h5>
@@ -192,3 +236,228 @@ onMounted(() => {
     getWallets();
 });
 </script>
+
+<style scoped>
+/* ===== هدر صفحه ===== */
+.header-card .card-header {
+    padding: 16px 20px;
+    background: transparent;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.page-title {
+    font-weight: 700;
+    color: #2d3436;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-input {
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+/* ===== جدول ===== */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2d3436;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+/* ===== کارت‌های موبایل ===== */
+.wallet-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wallet-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.wallet-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.wallet-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 10px;
+}
+
+.wallet-id-badge {
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.wallet-name {
+    font-weight: 700;
+    color: #2d3436;
+    font-size: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wallet-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wallet-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.wallet-info-row i {
+    color: #6c5ce7;
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.info-label {
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.info-value {
+    color: #2d3436;
+    font-weight: 600;
+    margin-right: auto;
+    word-break: break-word;
+    text-align: left;
+    direction: ltr;
+}
+
+.wallet-card-actions {
+    display: flex;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.wallet-card-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    white-space: nowrap;
+}
+
+.wallet-card-actions .btn span {
+    display: none;
+}
+
+/* ===== Pagination ===== */
+.pagination-responsive {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ========================================= */
+/* ===== موبایل (کمتر از 768px) ===== */
+/* ========================================= */
+@media (max-width: 767.98px) {
+    .header-card .card-header {
+        padding: 12px 14px;
+    }
+
+    .header-card .card-body {
+        padding: 12px 14px;
+    }
+
+    .page-title {
+        font-size: 1.15rem;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+    }
+
+    .search-input {
+        padding: 9px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* نمایش label دکمه‌ها در موبایل */
+    .wallet-card-actions .btn span {
+        display: inline;
+    }
+}
+
+/* ========================================= */
+/* ===== موبایل کوچک (کمتر از 400px) ===== */
+/* ========================================= */
+@media (max-width: 399.98px) {
+    .page-title {
+        font-size: 1rem;
+    }
+
+    .wallet-card {
+        padding: 12px;
+    }
+
+    .wallet-name {
+        font-size: 0.9rem;
+    }
+
+    .wallet-info-row {
+        font-size: 0.78rem;
+    }
+
+    .wallet-card-actions .btn {
+        font-size: 0.7rem;
+        padding: 5px 6px;
+    }
+}
+
+/* ========================================= */
+/* ===== دسکتاپ: مخفی کردن کارت‌ها ===== */
+/* ========================================= */
+@media (min-width: 768px) {
+    .wallet-cards {
+        display: none;
+    }
+}
+</style>
